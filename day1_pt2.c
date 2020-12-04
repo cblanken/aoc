@@ -20,25 +20,6 @@ int main(int argc, char** argv) {
             exit(EXIT_FAILURE);
         }
         
-        /*char buff[8];*/
-        /*char* inputs[8];*/
-        /*int i = 0;*/
-        /*while (fgets(buff, 8, fp) != NULL) {*/
-            /*inputs[i] = buff; */
-            /*printf("%s", inputs[i]);*/
-            /*i++;*/
-        /*}*/
-
-        /*uintmax_t num;*/
-        /*uintmax_t nums[1000];*/
-        /*for (int i = 0; i < 8; i++) {*/
-            /*printf("%s", inputs[i]);*/
-            /*num = strtoumax(inputs[i], NULL, 10);*/
-            /*nums[i] = strtoumax(inputs[i], NULL, 10);*/
-            /*printf("%lu", nums[i]);*/
-        /*}*/
-
-
         char* tmpStr;
         char* endPtr;
         uintmax_t tmpNum;
@@ -47,7 +28,6 @@ int main(int argc, char** argv) {
         while (fscanf(fp, "%ms", &tmpStr) > 0) {
             tmpNum = strtoumax(tmpStr, &endPtr, 10);
             free(tmpStr);
-            /*printf("%ld\n", tmpNum);*/
             numArr[i] = tmpNum;
             i++;
         }
