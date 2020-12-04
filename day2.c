@@ -37,12 +37,12 @@ pw_policy parse_password_policy(char* policy_string) {
 bool verify_pw(pw_policy policy) {
     int char_count = 0;
     int i = 0;
-    char x;
-    while ((x = policy.pw[i++])) {
+    char x = '\0';
+    do {
        if (x == policy.character) {  
            char_count++;
        }
-    }
+    } while((x = policy.pw[i++]));
 
     if (char_count >= policy.min && char_count <= policy.max) {
         /*printf("VALID\n");*/
