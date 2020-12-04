@@ -6,7 +6,7 @@ CFLAGS=-O2 -Wall -I/usr/local/include -I.
 
 all: day1 day1_pt2 day2 day2_pt2
 clean:
-	rm -f *.o *~ day1 day1_pt2 day2
+	rm -f *.o *~ day1 day1_pt2 day2 day2_pt2
 day1: day1.o
 	$(CC) -o day1 day1.o
 day1_pt2: day1_pt2.o
