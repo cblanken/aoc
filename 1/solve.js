@@ -34,8 +34,14 @@ function sum(arr) {
 
 // Solve
 parseFile(process.argv[2]).then(data => {
-    //console.log(data)
     total_cals_per_elf = data.map(cals => Number(sum(cals)));
-    console.log(total_cals_per_elf)
-    console.log(Math.max(...total_cals_per_elf));
+
+    // Part 1
+    console.log(`Part 1: ${Math.max(...total_cals_per_elf)}`);
+
+    // Part 2
+    total_cals_per_elf.sort((a, b) => b - a);
+    let top3 = total_cals_per_elf.slice(0, 3);
+    let top3_sum = sum(top3);
+    console.log(`Part 2: ${top3_sum}`);
 })
