@@ -63,6 +63,8 @@ function solve1(data) {
 }
 
 function solve2(data) {
+    let packet_start = findStartOfPacket(data, 14);
+    return packet_start
 }
 
 // Solve
