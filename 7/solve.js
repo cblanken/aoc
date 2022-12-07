@@ -157,6 +157,7 @@ class File {
     }
 }
 
+
 /* Solve */
 function solve1(data) {
     let root = new Directory(null, '/');
@@ -176,6 +177,26 @@ function solve1(data) {
 }
 
 function solve2(data) {
+    let root = new Directory(null, '/');
+    let shell = new Shell(root);
+    data.forEach(cmd => {
+        if (cmd.cmd === 'cd') {
+            shell.cd(cmd.arg);
+        } else if (cmd.cmd === 'ls') {
+            shell.ls(cmd.stdout);
+        }
+    });
+
+    const MAX_FILE_SYSTEM_SIZE = 70000000;
+    const TARGET_FREE_SPACE = 30000000;
+    const TARGET_FILE_SYSTEM_SIZE = MAX_FILE_SYSTEM_SIZE - TARGET_FREE_SPACE;
+    let root_size = root.getSize();
+    let free_space = MAX_FILE_SYSTEM_SIZE - root_size;
+
+    let dirs = root.getAllDirs()
+    dirs = dirs.filter(dir => root_size - dir.size <= TARGET_FILE_SYSTEM_SIZE);
+
+    return dirs.reduce((acc, dir) => { return dir.size < acc ? dir.size : acc }, Infinity);
 }
 
 // Part 1
