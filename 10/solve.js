@@ -72,6 +72,39 @@ class Command {
     }
 }
 
+class CRT {
+    constructor(width, height) {
+        this.width = width;
+        this.height = height;
+        this.screen = Array.from(Array(height), () => new Array(width));
+        this.screen.forEach(row => {
+            row.fill('.');
+        });
+        this.row = 0;
+    }
+
+    draw_sprite(x, cycle) {
+        let offset = cycle % this.width - 1;
+        if (offset >= x-1 && offset <= x+1) { // cycle matches sprite position
+            console.log(offset, cycle, x, this.row);
+            this.screen[this.row][offset] = '#' ;
+            console.log(this.toString());
+        }
+    }
+
+    toString() {
+        let str = '';
+        let row_num = 0;
+        this.screen.forEach(row => {
+            str += '\n';
+            str += `${row_num++}: `;
+            str += row.join('');
+        });
+
+        return str;
+    }
+}
+
 class CPU {
     constructor() {
         this.instructions = [];
@@ -80,22 +113,28 @@ class CPU {
             X: 1,
         };
         this.signal_strengths = [];
-        this.crt = Array.from(Array(6), () => new Array(40));
-        this.crt.forEach(row => {
-            row.fill('.');
-        });
+        this.crt = new CRT(40, 6);
     }
 
     get_signal_strength() {
         return this.cycle * this.registers.X;
     }
 
+    draw_sprite() {
+        this.crt.draw_sprite(this.registers.X, this.cycle);
+    }
+
     tick() {
-        // Check each cycle for signal sample
-        if ((this.cycle - 20) % 40 === 0) {
-            console.log("x", this.registers);
+        // Draw sprite
+        this.draw_sprite();
+        
+        // Check each cycle for signal sample and update CRT row
+        if (this.cycle % 40 === 0) {
             this.signal_strengths.push([this.cycle, this.get_signal_strength()]);
+            this.crt.row = this.signal_strengths.length;
         }
+
+        // Increment cycle count
         this.cycle++;
     }
 
@@ -117,7 +156,6 @@ class CPU {
 
 /* Solve */
 function solve1(data) {
-    console.log(data)
     let cpu = new CPU();
     data.forEach(cmd => {
         cpu.exec(cmd);
@@ -127,6 +165,11 @@ function solve1(data) {
 }
 
 function solve2(data) {
+    let cpu = new CPU();
+    data.forEach(cmd => {
+        cpu.exec(cmd);
+    });
+    return cpu.crt.toString();
 }
 
 // Part 1
