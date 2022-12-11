@@ -59,10 +59,11 @@ const DIR = {
     R: 'right',
 }
 
-class Pos {
-    constructor(x, y) {
+class Knot {
+    constructor(x, y, sym) {
         this.x = x;
         this.y = y;
+        this.sym = sym;
     }
 
     mov(x, y) {
@@ -94,48 +95,72 @@ class RopeBoard {
         this.board.forEach(row => {
             row.fill('.');
         });
-        this.start = start === undefined ? new Pos(Math.trunc(size / 2), Math.trunc(size / 2)) : start;
+        this.start = start === undefined ? new Knot(Math.trunc(size / 2), Math.trunc(size / 2)) : start;
         this.board[this.start.y][this.start.x] = 's';
-        this.head = new Pos(this.start.x, this.start.y);
-        this.tail = new Pos(this.start.x, this.start.y);
+        this.head = new Knot(this.start.x, this.start.y, 'H');
+        this.knots = [
+            new Knot(this.start.x, this.start.y, '1'),
+            new Knot(this.start.x, this.start.y, '2'),
+            new Knot(this.start.x, this.start.y, '3'),
+            new Knot(this.start.x, this.start.y, '4'),
+            new Knot(this.start.x, this.start.y, '5'),
+            new Knot(this.start.x, this.start.y, '6'),
+            new Knot(this.start.x, this.start.y, '7'),
+            new Knot(this.start.x, this.start.y, '8'),
+            new Knot(this.start.x, this.start.y, '9'),
+        ];
+        this.tail = this.knots[this.knots.length - 1];
     }
 
-    // Check current position of this.head and update this.tail accordingly
-    tailFollow() {
-        if (this.head.x !== this.tail.x && this.head.y !== this.tail.y) { // diag
+    updateTailChain() {
+        let head = this.head;
+        this.knots.forEach(knot => {
+            this.setEmptySymbol(knot);
+            this.tailFollow(head, knot);
+            head = knot;
+        });
+
+        this.setVisitedSymbol(this.tail);
+    }
+
+    // Check current position of `head` and update `tail` accordingly
+    tailFollow(head, tail) {
+        if (head.x !== tail.x && head.y !== tail.y) { // diag
             // up-left
-            if (this.head.x <= this.tail.x - 2 && this.head.y <= this.tail.y - 1 ||
-                this.head.x <= this.tail.x - 1 && this.head.y <= this.tail.y - 2) {
-                this.tail.up(1);
-                this.tail.left(1);
+            if (head.x <= tail.x - 2 && head.y <= tail.y - 1 ||
+                head.x <= tail.x - 1 && head.y <= tail.y - 2) {
+                tail.up(1);
+                tail.left(1);
             // up-right
             } else if (
-                this.head.x >= this.tail.x + 2 && this.head.y <= this.tail.y - 1 ||
-                this.head.x >= this.tail.x - 1 && this.head.y <= this.tail.y - 2) {
-                this.tail.up(1);
-                this.tail.right(1);
+                head.x >= tail.x + 2 && head.y <= tail.y - 1 ||
+                head.x >= tail.x - 1 && head.y <= tail.y - 2) {
+                tail.up(1);
+                tail.right(1);
             // down-left
             } else if (
-                this.head.x <= this.tail.x - 2 && this.head.y >= this.tail.y + 1 ||
-                this.head.x <= this.tail.x - 1 && this.head.y >= this.tail.y + 2) {
-                this.tail.down(1);
-                this.tail.left(1);
+                head.x <= tail.x - 2 && head.y >= tail.y + 1 ||
+                head.x <= tail.x - 1 && head.y >= tail.y + 2) {
+                tail.down(1);
+                tail.left(1);
             // down-right
             } else if (
-                this.head.x >= this.tail.x + 2 && this.head.y >= this.tail.y + 1 ||
-                this.head.x >= this.tail.x + 1 && this.head.y >= this.tail.y + 2) {
-                this.tail.down(1);
-                this.tail.right(1);
+                head.x >= tail.x + 2 && head.y >= tail.y + 1 ||
+                head.x >= tail.x + 1 && head.y >= tail.y + 2) {
+                tail.down(1);
+                tail.right(1);
             }
-        } else if (this.head.y <= this.tail.y - 2) { // up
-            this.tail.up(1);
-        } else if (this.head.y >= this.tail.y + 2) { // down
-            this.tail.down(1);
-        } else if (this.head.x <= this.tail.x - 2) { // left
-            this.tail.left(1);
-        } else if (this.head.x >= this.tail.x + 2) { // right
-            this.tail.right(1);
+        } else if (head.y <= tail.y - 2) { // up
+            tail.up(1);
+        } else if (head.y >= tail.y + 2) { // down
+            tail.down(1);
+        } else if (head.x <= tail.x - 2) { // left
+            tail.left(1);
+        } else if (head.x >= tail.x + 2) { // right
+            tail.right(1);
         }
+
+        this.setSymbol(tail, tail.sym);
     }
 
     setSymbol(pos, sym) {
@@ -167,9 +192,7 @@ class RopeBoard {
                     this.setEmptySymbol(this.head);
                     this.head.up(1);
                     this.setHeadSymbol(this.head);
-                    this.setVisitedSymbol(this.tail);
-                    this.tailFollow();
-                    this.setTailSymbol(this.tail);
+                    this.updateTailChain();
                 }
                 break;
             case DIR.D:
@@ -177,9 +200,7 @@ class RopeBoard {
                     this.setEmptySymbol(this.head);
                     this.head.down(1);
                     this.setHeadSymbol(this.head);
-                    this.setVisitedSymbol(this.tail);
-                    this.tailFollow();
-                    this.setTailSymbol(this.tail);
+                    this.updateTailChain();
                 }
                 break;
             case DIR.L:
@@ -187,9 +208,7 @@ class RopeBoard {
                     this.setEmptySymbol(this.head);
                     this.head.left(1);
                     this.setHeadSymbol(this.head);
-                    this.setVisitedSymbol(this.tail);
-                    this.tailFollow();
-                    this.setTailSymbol(this.tail);
+                    this.updateTailChain();
                 }
                 break;
             case DIR.R:
@@ -197,9 +216,7 @@ class RopeBoard {
                     this.setEmptySymbol(this.head);
                     this.head.right(1);
                     this.setHeadSymbol(this.head);
-                    this.setVisitedSymbol(this.tail);
-                    this.tailFollow();
-                    this.setTailSymbol(this.tail);
+                    this.updateTailChain();
                 }
                 break;
         }
