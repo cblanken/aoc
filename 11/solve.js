@@ -33,7 +33,7 @@ async function readFile(filename, part) {
 
 class Item {
     constructor(worry) {
-        this.worry = Number(worry);
+        this.worry = BigInt(worry);
     }
 }
 
@@ -43,12 +43,13 @@ Item.prototype.toString = function() {
 
 
 class Monkey {
-    constructor(id, items, op, test) {
+    constructor(id, items, op, test, worry_reduction) {
         this.id = id;
         this.items = items;
         this.op = op; // Get next worry value
         this.test = test; // Get next monkey to throw to
         this.inspect_count = 0;
+        this.worry_reduction = worry_reduction === undefined ? true : worry_reduction;
     }
 }
 
@@ -72,7 +73,7 @@ Monkey.prototype.exec_test = function(item, monkeys) {
     console.log(`    Testing item:`, item);
     let next_monkey_id = this.test(item.worry)
     let next_monkey = monkeys.find(m => m.id === next_monkey_id);
-    console.log(`    Item thrown to: ${next_monkey.id}`);
+    console.log(`    Item thrown to: Monkey ${next_monkey.id}`);
     this.pass_to(next_monkey);
 }
 
@@ -81,7 +82,9 @@ Monkey.prototype.turn = function(monkeys) {
     while (this.items.length > 0) {
         let item = this.items[0];
         this.inspect(item);
-        item.worry = Math.trunc(item.worry / 3);
+        if (this.worry_reduction) {
+            item.worry = item.worry / 3n; // no rounding necessary as BigInt
+        }
         this.exec_test(item, monkeys);
     }
     this.items.forEach(item => {
@@ -93,27 +96,48 @@ function calcMonkeyBusiness(monkeys) {
     return most_active[0].inspect_count * most_active[1].inspect_count;
 }
 
-function parseData(data) {
+function parseData(data, part) {
+    part = part === undefined ? 1 : part;
     parsed_data = [];
     data.forEach(group => {
         let id = Number(group[0][group[0].length - 2]);
         let items = group[1].split(':')[1].split(',').map(num => {
-            return new Item(Number(num.trim()));
+            return new Item(BigInt(num.trim()));
         });
+
+        let eval_arr = group[2].split('=')[1].trim().split(' ');
+        eval_arr = eval_arr.map(expr_ele => {
+            //console.log('expr', expr_ele);
+            if (!isNaN(parseInt(expr_ele))) {
+                //console.log("n BigInt", parseInt(expr_ele, 10));
+                expr_ele += 'n'; // make BigInt literal
+                //console.log("new BigInt", expr_ele);
+            }
+
+            return expr_ele;
+        });
+
+        let div_by = BigInt(group[3].split(' ').pop());
+        let eval_str = eval_arr.join(' ');
+        console.log('eval_str:', eval_str)
         const operation = (old) => {
-            return eval(group[2].split('=')[1].trim());
+            return eval(eval_str);
         }
+
         const test = (worry) => {
             // Return next monkey to throw to
-            let div_by = group[3].split(' ').pop();
-            if (worry % div_by === 0) {
+            if (worry % div_by === 0n) {
                 return Number(group[4].split(' ').pop());
             } else {
                 return Number(group[5].split(' ').pop());
             }
         }
 
-        parsed_data.push(new Monkey(id, items, operation, test))
+        if (part === 1) {
+            parsed_data.push(new Monkey(id, items, operation, test))
+        } else if (part === 2) {
+            parsed_data.push(new Monkey(id, items, operation, test, worry_reduction=false))
+        }
     });
 
     return parsed_data;
@@ -122,21 +146,30 @@ function parseData(data) {
 
 /* Solve */
 function solve1(data) {
-    let monkeys = parseData(data)
+    let monkeys = parseData(data, 1)
     for (let round = 0; round < 20; round++) {
         monkeys.forEach(monkey => {
             console.log(`Monkey ${monkey.id}:`)
             monkey.turn(monkeys)
         });
     }
+    monkeys.forEach(m => console.log('Monkey', m.id, 'inspected', m.inspect_count, 'items'));
 
-    //monkeys.forEach(m => console.log(m.id, m.items, m.inspect_count));
-    
     return calcMonkeyBusiness(monkeys);
 }
 
 function solve2(data) {
+    let monkeys = parseData(data, 2)
+    for (let round = 0; round < 1000; round++) {
+        monkeys.forEach(monkey => {
+            console.log(`Monkey ${monkey.id}:`)
+            monkey.turn(monkeys)
+        });
+    }
 
+    monkeys.forEach(m => console.log('Monkey', m.id, 'inspected', m.inspect_count, 'items'));
+
+    return calcMonkeyBusiness(monkeys);
 }
 
 // Part 1
@@ -146,5 +179,5 @@ readFile(process.argv[2], 1).then(data => {
 
 // Part 2
 readFile(process.argv[2], 1).then(data => {
-    console.log(`Part 2: ${solve2(data)}`);
+    //console.log(`Part 2: ${solve2(data)}`);
 })
