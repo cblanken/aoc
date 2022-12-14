@@ -21,39 +21,64 @@ function containsUniqueChars(str) {
 
 function getAdjacentPositions2D(row, col, width, height) {
     let positions = [];
+    let dirs = [];
     // Assume same width for all rows
     if (row > 0) {
         positions.push(new Pos(row-1, col)) // up
+        dirs.push(DIR.north)
         //if (col > 0) { positions.push(new Pos(row-1, col-1)) } // up-left
         //if (col < width - 1) { positions.push(new Pos(row-1, col+1)) } // up-right
     }
     if (row < height - 1) {
         positions.push(new Pos(row+1, col)) // down
+        dirs.push(DIR.south)
         //if (col > 0) { positions.push(new Pos(row+1, col-1)) } // down-left
         //if (col < width - 1) { positions.push(new Pos(row+1, col+1)) } // down-right
     }
     if (col > 0) {
         positions.push(new Pos(row, col-1)) // left
+        dirs.push(DIR.west)
     }
     if (col < width - 1) {
         positions.push(new Pos(row, col+1)) // right
+        dirs.push(DIR.east)
     }
 
-    return positions;
+    let adj_data = positions.map((pos, i) => {
+        return [pos, dirs[i]];
+    });
+
+    return adj_data;
 }
 
 const DIR = {
     none: null,
-    north: 1,
-    east: 2,
-    south: 3,
-    west: 4,
+    north: 'north',
+    east: 'east',
+    south: 'south',
+    west: 'west',
 }
 
 class Pos {
     constructor(row, col) {
         this.row = row;
         this.col = col;
+    }
+
+    north(dist = 1) {
+        this.row -= dist;
+    }
+
+    south(dist = 1) {
+        this.row += dist;
+    }
+
+    east(dist = 1) {
+        this.col += dist;
+    }
+
+    west(dist = 1) {
+        this.col -= dist;
     }
 }
 
@@ -114,8 +139,6 @@ class DGraph {
         this.nodes.forEach(node => {
             node.distance = Infinity;
             node.predecessor = null;
-            //distances[i] = Infinity;
-            //predecessors[i] = null;
         });
 
         source.distance = 0; // source => source distance is 0
