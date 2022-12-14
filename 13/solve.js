@@ -66,50 +66,61 @@ class Packet {
     }
 }
  
-function cmpPackets(left, right) {
-    if (left === right) { return 0; }
-    if (typeof left === 'number' && typeof right === 'number') {
-        if (left === right) {
-            return 0;
-        } else if (left < right) {
+function cmpPackets(a, b) {
+    if (a === b) { return null; }
+    if (typeof a === 'number' && typeof b === 'number') {
+        if (a < b) {
             return -1;
-        } else {
+        } else if (a > b) {
             return 1;
+        } else if (a === b) {
+            return null; // continue checking
         }
-    } else if (Array.isArray(left) && Array.isArray(right)) {
-        for (let i = 0; i < left.length; i++) {
-            if (right[i] === undefined) {
+    } else if (Array.isArray(a) && Array.isArray(b)) {
+        for (let i = 0; i < a.length; i++) {
+            if (b[i] === undefined) { // b is shorter than a
                 return 1;
             } else {
-                let cmp = sortPackets(left[i], right[i], depth+1);
-                if (cmp !== 0) { return cmp };
+                cmp = cmpPackets(a[i], b[i]); // check each item in list
+                if (cmp === null) {
+                    continue;
+                } else {
+                    return cmp;
+                }
             }
         }
-        return -1;
-    } else if (Array.isArray(right) && typeof left === 'number') { // left is integer
-        return sortPackets([left], right, depth+1);
-    } else if (Array.isArray(left) && typeof right === 'number') { // right is integer
-        return sortPackets(left, [right], depth+1);
-    }
 
+        if (a.length < b.length) {
+            return -1;
+        } else if (a.length === b.length) {
+            return null;
+        }
+    } else if (Array.isArray(b) && typeof a === 'number') { // a is integer
+        return cmpPackets([a], b);
+    } else if (Array.isArray(a) && typeof b === 'number') { // b is integer
+        return cmpPackets(a, [b]);
+    }
 }
 
 function parseData(data, part = 1) {
     let parsed_data = [];
-    console.log(data)
-    while(data.length > 0) {
-        let pair = data.splice(0, 2);
-        parsed_data.push(new Packet(eval(pair[0]), eval(pair[1])));
-        data.shift();
+    switch (part) {
+        case 1: // parse part 1
+            while(data.length > 0) {
+                let pair = data.splice(0, 2);
+                parsed_data.push(new Packet(eval(pair[0]), eval(pair[1])));
+                data.shift();
+            }
+            return parsed_data;
+        case 2: // parse part 2
+            return data.map(packet => eval(packet)).filter(x => x !== undefined);
     }
-    return parsed_data;
 }
 
 
 /* Solve */
 function solve1(data) {
     data = parseData(data);
-    console.log(data)
     let sum = 0;
     let cmp;
     data.forEach((packet, p) => {
@@ -122,9 +133,20 @@ function solve1(data) {
 }
 
 function solve2(data) {
-    console.log('before', data);
-    let sorted = data.sort(cmpPackets);
-    console.log('after', sorted);
+    let packets = parseData(data, 2);
+    packets.push([[2]]); // add divider packet
+    packets.push([[6]]); // add divider packet
+    packets.sort(cmpPackets);
+
+    let indexes = [];
+    packets.forEach((packet, i) => {
+        let str = JSON.stringify(packet)
+        if (JSON.stringify([[2]]) === str || JSON.stringify([[6]]) === str) {
+            indexes.push(i+1);
+        }
+    });
+
+    return utils.mult(indexes)
 }
 
 // Part 1
@@ -133,6 +155,6 @@ readFile(process.argv[2], 1).then(data => {
 })
 
 // Part 2
-readFile(process.argv[2], 1).then(data => {
-    //console.log(`Part 2: ${solve2(data)}`);
+readFile(process.argv[2], 2).then(data => {
+    console.log(`Part 2: ${solve2(data)}`);
 })
