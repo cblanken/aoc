@@ -3,6 +3,10 @@ function sum(arr) {
     return arr.reduce((acc, curr) => Number(acc) + Number(curr));
 }
 
+function mult(arr) {
+    return arr.reduce((acc, curr) => Number(acc) * Number(curr));
+}
+
 function isContainedBy(a, b) {
     // Returns true if 'a' is contained by 'b'
     return b[0] <= a[0] && b[1] >= a[1];
@@ -200,6 +204,7 @@ function log(level, ...args) {
 
 module.exports = {
     sum,
+    mult,
     isContainedBy,
     isOverlap,
     containsUniqueChars,
