@@ -176,14 +176,26 @@ class DGraph {
     }
 }
 
-const LOG_LEVELS = {
-    DISABLE: 0,
-    CRITICAL: 1,
+const LOGS = {
+    INFO: 1,
     WARNING: 2,
-    INFO: 3,
+    CRITICAL: 3,
+    DISABLE: 99,
 }
 
+let LOG_LEVEL = LOGS.INFO;
 function log(level, ...args) {
+    if (level >= LOG_LEVEL) {
+        let str = "";
+        args.forEach(arg => {
+            if (typeof arg !== 'string') {
+                str += JSON.stringify(arg) + ' ';
+            } else {
+                str += arg + ' ';
+            }
+        });
+        console.log(str);
+    }
 }
 
 module.exports = {
@@ -194,4 +206,7 @@ module.exports = {
     getAdjacentPositions2D,
     DGraphNode,
     DGraph,
+    LOG_LEVEL,
+    LOGS,
+    log,
 }
