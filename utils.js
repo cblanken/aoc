@@ -23,6 +23,14 @@ function containsUniqueChars(str) {
     return set.size === str.length;
 }
 
+function padStr(str, len) {
+    if (len < str.length) {
+        return str;
+    } else {
+        return ' '.repeat(len - str.length) + str;
+    }
+}
+
 function getAdjacentPositions2D(row, col, width, height) {
     let positions = [];
     let dirs = [];
@@ -64,25 +72,77 @@ const DIR = {
 }
 
 class Pos {
-    constructor(row, col) {
-        this.row = row;
-        this.col = col;
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
     }
 
     north(dist = 1) {
-        this.row -= dist;
+        this.y -= dist;
     }
 
     south(dist = 1) {
-        this.row += dist;
+        this.y += dist;
     }
 
     east(dist = 1) {
-        this.col += dist;
+        this.x += dist;
     }
 
     west(dist = 1) {
-        this.col -= dist;
+        this.x -= dist;
+    }
+}
+
+class Line {
+    constructor(pos1, pos2) {
+        this.pos1 = pos1;
+        this.pos2 = pos2;
+    }
+}
+
+class Grid {
+    constructor(width, height) {
+        this.width = width;
+        this.height = height;
+        this.grid = Array.from(Array(height), () => new Array(width))
+        this.grid.forEach(row => {
+            row.fill('.');
+        });
+    }
+
+    inRange(pos) {
+        return pos.x >= 0 && pos.x < this.width && pos.y >= 0 && pos.y < this.height
+    }
+
+    drawLine(line, char = "█") { // non-inclusive on upper bound
+        if (line.pos1.x === line.pos2.x) { // vertical line
+            let inc = line.pos1.y - line.pos2.y < 0 ? 1 : -1;
+            for (let y = line.pos1.y; y !== line.pos2.y +inc; y += inc) {
+                if (y < 0 || y > this.grid.length - 1) { break; }
+                this.grid[y][line.pos1.x] = char;
+            }
+        } else if (line.pos1.y === line.pos2.y) { // horizontal line
+            let inc = line.pos1.x - line.pos2.x < 0 ? 1 : -1;
+            for (let x = line.pos1.x; x !== line.pos2.x + inc; x += inc) {
+                if (x < 0 || x > this.grid[0].length - 1) { break; }
+                this.grid[line.pos1.y][x] = char;
+            }
+        } else { // sloped line
+            // TODO
+        }
+    }
+
+    toString(x1=0, y1=0, x2=this.width, y2=this.height) {
+        let str = "";
+        for (let y = y1; y < y2; y++) {
+            str += padStr(`${y}`, this.grid.length.toString().length + 2) + ` ${this.grid[y].slice(x1, x2).join('')}\n`;
+        }
+        return str;
+    }
+
+    print(x1=0, y1=0, x2=this.grid[0].length, y2=this.grid.length) {
+        console.log(this.toString(x1, y1, x2, y2));
     }
 }
 
@@ -187,7 +247,7 @@ const LOGS = {
     DISABLE: 99,
 }
 
-let LOG_LEVEL = LOGS.INFO;
+let LOG_LEVEL = LOGS.DISABLE;
 function log(level, ...args) {
     if (level >= LOG_LEVEL) {
         let str = "";
@@ -203,15 +263,19 @@ function log(level, ...args) {
 }
 
 module.exports = {
-    sum,
-    mult,
-    isContainedBy,
-    isOverlap,
+    DGraph,
+    DGraphNode,
+    Grid,
+    Line,
+    LOGS,
+    LOG_LEVEL,
+    Pos,
     containsUniqueChars,
     getAdjacentPositions2D,
-    DGraphNode,
-    DGraph,
-    LOG_LEVEL,
-    LOGS,
+    isContainedBy,
+    isOverlap,
     log,
+    padStr,
+    mult,
+    sum,
 }
