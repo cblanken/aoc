@@ -92,6 +92,10 @@ class Pos {
     west(dist = 1) {
         this.x -= dist;
     }
+
+    getManhattanDistance(pos) {
+        return Math.abs(pos.x - this.x) + Math.abs(pos.y - this.y);
+    }
 }
 
 class Line {
@@ -102,9 +106,11 @@ class Line {
 }
 
 class Grid {
-    constructor(width, height) {
+    constructor(width, height, x_offset, y_offset) {
         this.width = width;
         this.height = height;
+        this.x_offset = x_offset === undefined ? 0 : x_offset;
+        this.y_offset = y_offset === undefined ? 0 : y_offset;
         this.grid = Array.from(Array(height), () => new Array(width))
         this.grid.forEach(row => {
             row.fill('.');
@@ -112,7 +118,8 @@ class Grid {
     }
 
     inRange(pos) {
-        return pos.x >= 0 && pos.x < this.width && pos.y >= 0 && pos.y < this.height
+        return  pos.x >= this.x_offset && pos.x < this.x_offset + this.width &&
+                pos.y >= this.y_offset && pos.y < this.y_offset + this.height
     }
 
     drawLine(line, char = "█") { // non-inclusive on upper bound
@@ -133,22 +140,37 @@ class Grid {
         }
     }
 
+    fillRange() {
+
+    }
+
+    getRow(row) {
+        return this.grid[row-this.y_offset]
+    }
+
+    getValue(pos) {
+        return this.grid[pos.y-this.y_offset][pos.x-this.x_offset]
+    }
+
+    drawChar(pos, char) {
+        if (this.inRange(pos)) {
+            this.grid[pos.y-this.y_offset][pos.x-this.x_offset] = char;
+        } else {
+            //throw new Error(`The position ${JSON.stringify(pos)} exceeds the range of the grid: x_offset: ${this.x_offset}, y_offset: ${this.y_offset}, width: ${this.width}, height: ${this.height}`)
+            // do nothing
+        }
+    }
+
     toString(x1=0, y1=0, x2=this.width, y2=this.height) {
         let str = "";
         for (let y = y1; y < y2; y++) {
-            str += padStr(`${y}`, this.grid.length.toString().length + 2) + ` ${this.grid[y].slice(x1, x2).join('')}\n`;
+            str += padStr(`${y+this.y_offset}`, this.grid.length.toString().length + 2) + ` ${this.grid[y].slice(x1, x2).join('')}\n`;
         }
         return str;
     }
 
     print(x1=0, y1=0, x2=this.grid[0].length, y2=this.grid.length) {
         console.log(this.toString(x1, y1, x2, y2));
-    }
-}
-
-class Node {
-    constructor(val) {
-        this.val = val;
     }
 }
 
