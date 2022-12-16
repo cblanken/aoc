@@ -36,23 +36,23 @@ function getAdjacentPositions2D(row, col, width, height) {
     let dirs = [];
     // Assume same width for all rows
     if (row > 0) {
-        positions.push(new Pos(row-1, col)) // up
+        positions.push(new Pos(col, row-1)) // up
         dirs.push(DIR.north)
         //if (col > 0) { positions.push(new Pos(row-1, col-1)) } // up-left
         //if (col < width - 1) { positions.push(new Pos(row-1, col+1)) } // up-right
     }
     if (row < height - 1) {
-        positions.push(new Pos(row+1, col)) // down
+        positions.push(new Pos(col, row+1)) // down
         dirs.push(DIR.south)
         //if (col > 0) { positions.push(new Pos(row+1, col-1)) } // down-left
         //if (col < width - 1) { positions.push(new Pos(row+1, col+1)) } // down-right
     }
     if (col > 0) {
-        positions.push(new Pos(row, col-1)) // left
+        positions.push(new Pos(col-1, row)) // left
         dirs.push(DIR.west)
     }
     if (col < width - 1) {
-        positions.push(new Pos(row, col+1)) // right
+        positions.push(new Pos(col+1, row)) // right
         dirs.push(DIR.east)
     }
 
@@ -106,15 +106,17 @@ class Line {
 }
 
 class Grid {
-    constructor(width, height, x_offset, y_offset) {
+    constructor(width, height, x_offset, y_offset, grid) {
         this.width = width;
         this.height = height;
         this.x_offset = x_offset === undefined ? 0 : x_offset;
         this.y_offset = y_offset === undefined ? 0 : y_offset;
-        this.grid = Array.from(Array(height), () => new Array(width))
-        this.grid.forEach(row => {
-            row.fill('.');
-        });
+        this.grid = grid === undefined ? Array.from(Array(height), () => new Array(width)) : grid;
+        if (!grid) {
+            this.grid.forEach(row => {
+                row.fill('.');
+            });
+        }
     }
 
     inRange(pos) {
@@ -150,6 +152,34 @@ class Grid {
 
     getValue(pos) {
         return this.grid[pos.y-this.y_offset][pos.x-this.x_offset]
+    }
+
+    getAdjacentPositions2D(row, col) {
+        let positions = [];
+        let dirs = [];
+        // Assume same this.width for all rows
+        if (row > 0) {
+            positions.push(new Pos(row-1, col)) // up
+            dirs.push(DIR.north)
+        }
+        if (row < this.height - 1) {
+            positions.push(new Pos(row+1, col)) // down
+            dirs.push(DIR.south)
+        }
+        if (col > 0) {
+            positions.push(new Pos(row, col-1)) // left
+            dirs.push(DIR.west)
+        }
+        if (col < this.width - 1) {
+            positions.push(new Pos(row, col+1)) // right
+            dirs.push(DIR.east)
+        }
+
+        let adj_data = positions.map((pos, i) => {
+            return [pos, dirs[i]];
+        });
+
+        return adj_data;
     }
 
     drawChar(pos, char) {
