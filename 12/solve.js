@@ -124,14 +124,62 @@ function solve1(data) {
 }
 
 function solve2(data) {
+    let parsed_data = parseData(data, 1);
+    let nodes = parsed_data.flat()
+    let start_node = nodes.filter(n => n.id === 'S')[0];
+    let end_node = nodes.filter(n => n.id === 'E')[0];
+    
+    let starting_nodes = nodes.filter(n => n.id === 'a');
+    let distances = [];
+    let graph = new utils.DGraph(nodes);
+
+    starting_nodes.forEach(node => {
+        console.log(node.id, node.pos)
+        graph.shortestPath(node);
+        let board = []
+        parsed_data.forEach(row => {
+            let r = [];
+            row.forEach(_ => {
+                r.push('⋅');
+            });
+
+            board.push(r);
+        });
+
+        board[end_node.pos.y][end_node.pos.x] = 'E';
+
+        // Construct path
+
+        let curr_node = end_node;
+        //while (curr_node.predecessor) {
+        //    curr_node.predecessor.edges.forEach(edge => {
+        //        if (edge.node2 === curr_node) {
+        //            let pos = edge.node1.pos;
+        //            board[pos.y][pos.x] = utils.DIR_SYM[edge.dir][0];
+        //        }
+        //    });
+
+        //    curr_node = curr_node.predecessor;
+        //}
+
+        // Print board
+        //console.log('='.repeat(30))
+        //board.forEach(row => {
+        //    console.log(row.join(''))
+        //})
+
+        distances.push(end_node.distance);
+    });
+
+    return Math.min(...distances)
 }
 
 // Part 1
 readFile(process.argv[2], 1).then(data => {
-    console.log(`Part 1: ${solve1(data)}`);
+    //console.log(`Part 1: ${solve1(data)}`);
 })
 
 // Part 2
 readFile(process.argv[2], 1).then(data => {
-    //console.log(`Part 2: ${solve2(data)}`);
+    console.log(`Part 2: ${solve2(data)}`);
 })
