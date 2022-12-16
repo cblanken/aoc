@@ -38,14 +38,10 @@ function getAdjacentPositions2D(row, col, width, height) {
     if (row > 0) {
         positions.push(new Pos(col, row-1)) // up
         dirs.push(DIR.north)
-        //if (col > 0) { positions.push(new Pos(row-1, col-1)) } // up-left
-        //if (col < width - 1) { positions.push(new Pos(row-1, col+1)) } // up-right
     }
     if (row < height - 1) {
         positions.push(new Pos(col, row+1)) // down
         dirs.push(DIR.south)
-        //if (col > 0) { positions.push(new Pos(row+1, col-1)) } // down-left
-        //if (col < width - 1) { positions.push(new Pos(row+1, col+1)) } // down-right
     }
     if (col > 0) {
         positions.push(new Pos(col-1, row)) // left
@@ -69,6 +65,13 @@ const DIR = {
     east: 'east',
     south: 'south',
     west: 'west',
+}
+
+const DIR_SYM = {
+    [DIR.north]: '↑',
+    [DIR.east]: '→',
+    [DIR.south]: '↓',
+    [DIR.west]: '←',
 }
 
 class Pos {
@@ -214,10 +217,11 @@ class Edge {
 }
 
 class DGraphNode {
-    constructor(id, value, edges = []) {
+    constructor(id, value, edges, pos) {
         this.id = id;
         this.value = value;
-        this.edges = edges;
+        this.edges = edges === undefined ? [] : edges;
+        this.pos = pos === undefined ? new Pos(0, 0) : pos;
     }
 
     addEdge(weight, dest_node, dir) {
@@ -315,6 +319,8 @@ function log(level, ...args) {
 }
 
 module.exports = {
+    DIR,
+    DIR_SYM,
     DGraph,
     DGraphNode,
     Grid,

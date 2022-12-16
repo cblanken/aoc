@@ -12,12 +12,12 @@ async function readFile(filename, part) {
         });
 
         let data = [];
-        let row = [];
+        let line_cnt = 0;
         file.on('line', line => {
-            data.push([...line.trim().split('').map(letter => {
-                return new utils.DGraphNode(letter, ELEVATION[letter])
+            data.push([...line.trim().split('').map((letter, i) => {
+                return new utils.DGraphNode(letter, ELEVATION[letter], [], new utils.Pos(i, line_cnt))
             })]);
-            row = [];
+            line_cnt++;
         })
 
         file.on('close', _ => {
@@ -27,13 +27,11 @@ async function readFile(filename, part) {
 }
 
 function parseData(data, part = 1) {
-    console.log(data)
     data.forEach((row, r) => {
         row.forEach((node, c) => {
             if (node.id === 'E') { return } // Don't add egress edges to End node
             let dir, adj;
             adjs = utils.getAdjacentPositions2D(r, c, data[0].length, data.length);
-            console.log(r, c, adjs)
             adjs.forEach(adj => {
                 let pos = adj[0];
                 let dir = adj[1];
@@ -85,20 +83,17 @@ const ELEVATION = {
 /* Solve */
 function solve1(data) {
     let parsed_data = parseData(data, 1);
-    console.log(parsed_data)
     let nodes = parsed_data.flat()
-    //nodes.forEach(n => console.log(`${n.value}; edges:`, n.edges));
+    let start_node = nodes.filter(n => n.id === 'S')[0];
     
     let graph = new utils.DGraph(nodes);
-    graph.shortestPath(graph.nodes[0]);
-    //console.log(graph.nodes)
-    
+    graph.shortestPath(start_node);
 
     let board = []
     parsed_data.forEach(row => {
         let r = [];
         row.forEach(_ => {
-            r.push('.');
+            r.push('⋅');
         });
 
         board.push(r);
@@ -106,22 +101,19 @@ function solve1(data) {
 
     // Construct path
     let end_node = nodes.filter(n => n.id === 'E')[0];
-
+    board[end_node.pos.y][end_node.pos.x] = 'E';
 
     let curr_node = end_node;
     while (curr_node.predecessor) {
         curr_node.predecessor.edges.forEach(edge => {
-            //console.log(edge)
             if (edge.node2 === curr_node) {
-                console.log(edge.dir);
+                let pos = edge.node1.pos;
+                board[pos.y][pos.x] = utils.DIR_SYM[edge.dir][0];
             }
         });
 
         curr_node = curr_node.predecessor;
     }
-
-    //console.log(curr_node)
-
 
     // Print board
     board.forEach(row => {
