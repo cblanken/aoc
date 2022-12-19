@@ -210,7 +210,6 @@ function solve1(data) {
 
             // Step rock until landed
             while (true) {
-                //console.log("&&& CURR step count", rocks.length, rock_index, rocks[rock_index].step_count)
                 jet_str = data[jet_index];
                 jet_index = (jet_index + 1) % data.length;
                 if (!rocks[rock_index].step(jet_str)) { break; }
@@ -229,6 +228,8 @@ function solve1(data) {
 }
 
 function solve2(data) {
+    // TODO: add batch process to split grid into a set of grids stacks on top of each other
+    // Process each grid up to height of (e.g. 10_000), maintain count for height count
 }
 
 // Part 1
