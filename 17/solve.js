@@ -39,7 +39,7 @@ const FALLING_ROCKS = [
 @@`,
 ]
 
-const ROCKS = [
+let ROCKS = [
 `####`,
 `.#.
 ###
@@ -59,19 +59,20 @@ function parseData(data, part = 1) {
     let parsed_data = {};
     switch (part) {
         case 1: // parse part 1
-            return data[0];
+            return data[0].split('');
         case 2: // parse part 2
-            return data[0];
+            return data[0].split('');
     }
 }
 
 class Rock {
+    #pos; #step_count; #is_landed;
     constructor(str, pos, grid) {
         this.str = str;
         this.height = str.split('\n').length;
         this.width = str.split('\n')[0].length;
         this.grid = grid;
-        this.pos = pos;
+        this.#pos = pos;
         this.pixels = [];
         str.split('\n').forEach((row, y) => {
             row.split('').forEach((char, x) => {
@@ -80,70 +81,77 @@ class Rock {
                 }
             });
         });
-        this.step_count = 1;
-        this.is_landed = false;
+        this.#step_count = 0;
+        this.#is_landed = false;
+    }
+
+    get pos() {
+        return this.#pos;
+    }
+
+    set pos(value) {
+        this.#pos = value;
+    }
+
+    get step_count() {
+        return this.#step_count;
     }
 
     #move(dir) {
         this.pos[dir]();
-
-        //switch(dir) {
-        //    case utils.DIR.north:
-        //        this.top_left.north();
-        //        this.top_right.north();
-        //        this.bottom_left.north();
-        //        this.bottom_right.north();
-        //        break;
-        //    case utils.DIR.south:
-        //        this.top_left.south();
-        //        this.top_right.south();
-        //        this.bottom_left.south();
-        //        this.bottom_right.south();
-        //        break;
-        //    case utils.DIR.east:
-        //        this.top_left.east();
-        //        this.top_right.east();
-        //        this.bottom_left.east();
-        //        this.bottom_right.east();
-        //        break;
-        //    case utils.DIR.west:
-        //        this.top_left.west();
-        //        this.top_right.west();
-        //        this.bottom_left.west();
-        //        this.bottom_right.west();
-        //        break;
-        //}
     }
 
-    reset(pos) {
-        this.step_count = 1;
-        this.pos = pos;
-        this.is_landed = false;
+    reset() {
+        this.#step_count = 0;
+        this.#is_landed = false;
     }
 
-    fall() {
-        // TODO: check if all pixels are in range or have intersected with existing rocks
-        if (this.pos.y - this.grid.floor >= this.height) {
-            this.#move(utils.DIR.north);
+    #fall() {
+        // Check for overlap if rock falls 1 unit down
+        let is_overlap = this.pixels.some(pixel => {
+            let pos = new utils.Pos(this.pos.x + pixel.x, this.pos.y - pixel.y - 1);
+            //console.log('grid val', pos.x, pos.y, this.grid.getValue(pos), pixel)
+            return this.grid.getValue(pos) === '#';
+        });
+        if (is_overlap) {
+            this.#is_landed = true;
+            console.log('  Rock falls 1 unit causing it to land')
         } else {
-            this.is_landed = true;
+            this.#move(utils.DIR.north);
+            console.log('  Rock falls 1 unit!')
         }
     }
     
-    #jet_push(jet_char, grid) {
-        // TODO: check if all pixels are in range or have intersected with existing rocks
+    #jet_push(jet_char) {
+        let is_overlap;
         switch (jet_char) {
             case '>':
-                this.#move(utils.DIR.east);
+                is_overlap = this.pixels.some(pixel => this.pos.x + pixel.x + 1 >= this.grid.x_offset + this.grid.width ||
+                     this.grid.grid[this.pos.y - pixel.y][this.pos.x + pixel.x + 1] === '#')
+                if (!is_overlap) {
+                    this.#move(utils.DIR.east);
+                    console.log('  Rock being pushed right by jet!')
+                } else {
+                    console.log('  Rock being pushed right by jet but nothing happens!')
+                }
                 break;
             case '<':
-                this.#move(utils.DIR.west);
+                is_overlap = this.pixels.some(pixel => this.pos.x + pixel.x - 1 < this.grid.x_offset ||
+                     this.grid.grid[this.pos.y - pixel.y][this.pos.x + pixel.x - 1] === '#')
+                if (!is_overlap) {
+                    console.log('  Rock being pushed left by jet!')
+                    this.#move(utils.DIR.west);
+                } else {
+                    console.log('  Rock being pushed left by jet but nothing happens!')
+                }
                 break;
         }
     }
 
     #rest() {
         this.grid.floor += this.height;
+        this.draw();
+        this.reset();
     }
 
     draw() {
@@ -154,24 +162,24 @@ class Rock {
         });
     }
 
-    step() {
-        console.log(`Step ${this.step_count}`);
-        this.step_count++;
+    step(jet_char) {
+        console.log(`Step ${this.#step_count}, Pos:`, this.#pos);
+
+        // Rock falls or is pushed by jet
+        //if (this.#step_count % 2 === 0) {
+        if (jet_char) {
+            this.#jet_push(jet_char);
+        } else {
+            this.#fall();
+        }
+
+        this.#step_count += 1;
+
         // Rock comes to rest
-        if (this.is_landed) {
+        if (this.#is_landed) {
             this.#rest()
             return false;
         }
-
-        // Rock falls or is pushed by jet
-        if (this.step_count % 2 === 0) {
-            console.log('  Rock is falling!')
-            this.fall();
-        } else {
-            console.log('  Rock being pushed by jet!')
-            this.#jet_push();
-        }
-
         return true;
     }
 
@@ -183,29 +191,66 @@ function solve1(data) {
     let height = 28;
     let width = 7;
     let grid = new utils.Grid(width, height)
-    grid.floor = grid.y_offset;
+    
+    // Set floor
+    grid.floor = 1;
+    for(let i = 0; i < grid.grid[0].length; i++) {
+        grid.drawChar(new utils.Pos(i, 0), '#')
+    }
 
     let drop_pos = new utils.Pos(2, 0)
 
+    let rocks = ROCKS.map(str => new Rock(str, new utils.Pos(2, str.split('\n').length+3), grid))
+    let jet_str;
 
-    rocks = ROCKS.map(str => new Rock(str, new utils.Pos(2, str.split('\n').length+3), grid))
-    
-    for (let i = 0; i < 6; i++) {
-        console.log(rocks[i])
-        while(rocks[i].step()) {
-            console.log('>>> ROCK POS: ', rocks[i].pos)
+    // Iterate over all jet stream input
+    rock_index = 0;
+    let rock_count = 0;
+    while(data.length > 0) {
+        if (rock_count > 3)  { break; }
+        // Loop through rocks
+        while (true) {
+            // Update rock spawn position
+            rocks[rock_index].pos = new utils.Pos(2, grid.floor + rocks[rock_index].height + 2);
+
+            // Step rock until landed
+            while (true) {
+                //console.log("&&& CURR step count", rocks.length, rock_index, rocks[rock_index].step_count)
+                if (rocks[rock_index].step_count % 2 === 0) {
+                    jet_str = data.splice(0, 1)[0]
+                } else {
+                    jet_str = null;
+                }
+                
+                if (!rocks[rock_index].step(jet_str)) { break; }
+            }
+
+            rock_count++;
+            
+            // Update index to next rock
+            console.log('rock index', rock_index, 'rock count', rock_count)
+            rock_index = (rock_index + 1) % rocks.length
+
+            if (rock_count > 3)  { break; }
         }
-        rocks[i].draw(grid);
-        rocks[i].reset(new utils.Pos(2, grid.floor + rocks[i].height + 3))
-
-        grid.printBottomUp();
-        console.log(' '.repeat(height.toString().length + 3) + '+' + '-'.repeat(width) + '+');
     }
+    grid.printBottomUp();
+    
+    //for (let i = 0; i < 1; i++) {
+    //    console.log(rocks[i].str)
+    //    console.log("FLOOR ", grid.floor, rocks[i].height)
+    //    rocks[i].pos = new utils.Pos(2, grid.floor + rocks[i].height + 3);
+    //    console.log("PUSHING", data[i])
+    //    while(true) {
+    //        console.log('  >>> ROCK POS: ', rocks[i].pos)
+    //        rocks[i].step(data[i])
+    //    }
+    //    //rocks[i].reset(new utils.Pos(2, grid.floor + rocks[i].height + 3))
 
-    // NOTE: using a grid.floor WON'T WORK! You have to check whether one of the current rock's
-    // pixels is sitting on top of another rock (or the floor) since the rocks won't alwys cover
-    // the entire floor
-
+    //    grid.printBottomUp();
+    //    //grid.print();
+    //    console.log(' '.repeat(height.toString().length + 3) + '+' + '-'.repeat(width) + '+');
+    //}
 }
 
 function solve2(data) {

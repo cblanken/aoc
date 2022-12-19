@@ -189,6 +189,7 @@ class Grid {
         if (this.inRange(pos)) {
             this.grid[pos.y-this.y_offset][pos.x-this.x_offset] = char;
         } else {
+            console.log(`Pos: ${pos} out of grid range!`)
             //throw new Error(`The position ${JSON.stringify(pos)} exceeds the range of the grid: x_offset: ${this.x_offset}, y_offset: ${this.y_offset}, width: ${this.width}, height: ${this.height}`)
             // do nothing
         }
@@ -197,13 +198,17 @@ class Grid {
     toString(x1=0, y1=0, x2=this.width, y2=this.height) {
         let str = "";
         for (let y = y1; y < y2; y++) {
-            str += padStr(`${y+this.y_offset}`, this.grid.length.toString().length + 2) + ` ${this.grid[y].slice(x1, x2).join('')}\n`;
+            str += padStr(`${y+this.y_offset}`, this.grid.length.toString().length + 2) + ` |${this.grid[y].slice(x1, x2).join('')}|\n`;
         }
         return str;
     }
 
     print(x1=0, y1=0, x2=this.grid[0].length, y2=this.grid.length) {
         console.log(this.toString(x1, y1, x2, y2));
+    }
+
+    printBottomUp(x1=0, y1=0, x2=this.grid[0].length, y2=this.grid.length) {
+        this.toString(x1, y1, x2, y2).split('\n').reverse().forEach(row => console.log(row));
     }
 }
 
@@ -221,7 +226,7 @@ class DGraphNode {
         this.id = id;
         this.value = value;
         this.edges = edges === undefined ? [] : edges;
-        this.pos = pos === undefined ? new Pos(0, 0) : pos;
+        this.pos = pos === undefined ? null : pos;
     }
 
     addEdge(weight, dest_node, dir) {
