@@ -37,8 +37,10 @@ pub fn print_file(path: &str) {
     println!("{hr}");
 }
 
-#[derive(PartialEq)]
 #[derive(Clone)]
+#[derive(Eq)]
+#[derive(Hash)]
+#[derive(PartialEq)]
 pub struct Vec2 {
     pub x: usize,
     pub y: usize,
@@ -54,7 +56,6 @@ pub fn is_adjacent_to_area(area: &(Vec2, Vec2), target: &Vec2, max_x: usize) -> 
     let x_range = start_x..=end_x + 1;
     let mid_y_range = start_y..=end_y + 1;
     if (x_range.contains(&target.x) && start_y > 0 && target.y == start_y - 1) ||  // Top row
-        // (mid_y_range.contains(&target.y) && (target.x == start_x - 1 || target.x == end_x + 1)) || // Middle sides
         (mid_y_range.contains(&target.y) && start_x > 0 && (target.x == cmp::max(start_x - 1, 0) || target.x == cmp::min(end_x + 1, max_x))) || // Middle sides
         (x_range.contains(&target.x) && target.y == end_y + 1) { // Bottom row
         return true;
@@ -80,9 +81,9 @@ pub fn get_adjacent_positions(area: &(Vec2, Vec2),  max_pos: &Vec2) -> Vec<Vec2>
     let end_y = area.1.y;
 
     let is_flush_left = start_x <= 0;
-    let is_flush_right = end_x >= max_pos.x - 1;
+    let is_flush_right = end_x >= max_pos.x;
     let is_flush_top = start_y <= 0;
-    let is_flush_bottom = end_y >= max_pos.y - 1;
+    let is_flush_bottom = end_y >= max_pos.y;
 
     // Middle left
     if !is_flush_left {

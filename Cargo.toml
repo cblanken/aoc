@@ -12,3 +12,4 @@ members = [
 ]
 
 [dependencies]
+itertools = "0.12.0"
