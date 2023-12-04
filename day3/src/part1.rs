@@ -2,46 +2,77 @@ use aoc_utils::{
     read_file,
     str_to_vec2d,
     Vec2,
-    is_adjacent_to_area,
+    get_adjacent_positions,
 };
 
+
+pub fn is_symbol(c: char) -> bool {
+    c != '.' && !c.is_digit(10)
+}
 
 pub fn solve(filepath: &str) -> String {
     let data = read_file(filepath);
     let data_2d = str_to_vec2d(&data);
 
+    let max_pos = Vec2 {
+        x: data_2d[0].len() - 1,
+        y: data_2d.len() - 1,
+    };
+
     let mut nums = Vec::<(Vec2, Vec2)>::new();
     let mut symbols = Vec::<Vec2>::new();
 
     for (y, line) in data_2d.clone().into_iter().enumerate() {
-        let mut start_x: i32 = -1;
-        let mut end_x: i32 = -1;
+        let mut start_x: Option<usize> = None;
+        let mut end_x: Option<usize> = None;
         for (x, c) in line.into_iter().enumerate() {
-            if c.is_digit(10) && start_x < 0 { // first digit in series
-                start_x = x as i32;
-            } else if c.is_digit(10) { // non-first digit in series
-                end_x = x as i32;
-            } else if c != '.' { // symbol
-                symbols.push(Vec2 { x: x as i32, y: y as i32 });
-                println!("Symbol found: '{c}' @{x},{y}");
-            } else if end_x > 0 { // empty and digit series found
+            if c.is_digit(10) && start_x.is_none() { // first digit in series
+                start_x = Some(x);
+                if end_x.is_none() {
+                    end_x = Some(x);
+                }
+            } else if c.is_digit(10) && start_x.is_some() { // non-first digit in series
+                end_x = Some(x);
+            } else { // non-digit
+
+                if end_x.is_some() {
+                    nums.push((
+                        Vec2 { x: start_x.unwrap(), y },
+                        Vec2 { x: end_x.unwrap(), y },
+                    ));
+
+                    // println!("Number found: @({},{});{}", start_x.unwrap(), end_x.unwrap(), y);
+                    start_x = None;
+                    end_x = None;
+
+                }
+
+                if c != '.' { // symbol
+                    symbols.push(Vec2 { x, y });
+                    // println!("Symbol found: '{c}' @{x},{y}");
+                } else { } // empty (dot)
+            }
+
+            if x >= max_pos.x && start_x.is_some() {
                 nums.push((
-                    Vec2 { x: start_x, y: y as i32 },
-                    Vec2 { x: end_x, y: y as i32 },
+                    Vec2 { x: start_x.unwrap(), y },
+                    Vec2 { x: max_pos.x, y },
                 ));
-                println!("Number found: @({start_x},{end_x});{y}");
 
-                start_x = -1;
-                end_x = -1
-
+                println!("Number found: @({},{});{}", start_x.unwrap(), end_x.unwrap(), y);
+                start_x = None;
+                end_x = None;
             }
         }
-        println!();
     }
 
     nums.into_iter()
         .fold(0, |acc, num_seq| {
-            if symbols.clone().into_iter().any(|sym| is_adjacent_to_area(&num_seq, &sym)) {
+            let border_contains_symbol = get_adjacent_positions(&num_seq, &max_pos)
+                .into_iter()
+                .any(|pos| is_symbol(data_2d[pos.y][pos.x]));
+
+            if border_contains_symbol {
                 let mut num = "".to_string();
                 let start_x = num_seq.0.x as usize;
                 let end_x = num_seq.1.x as usize;
@@ -50,15 +81,9 @@ pub fn solve(filepath: &str) -> String {
                     num.push(data_2d[y][i]);
                 }
                 println!("{num} adjacent to symbol!");
-                return acc + num.parse::<u32>().unwrap();
+                return acc + num.parse::<usize>().unwrap();
             } else {
-                println!("Num NOT adjacent to symbol!");
                 return acc;
             }
         }).to_string()
-
-    // let is_adj = is_adjacent_to_area(&nums[1], &symbols[0]);
-    // println!("{}", is_adj);
-
-    // data_2d[0][0].to_string()
 }
