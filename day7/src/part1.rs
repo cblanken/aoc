@@ -35,6 +35,16 @@ fn get_card_rank(c: &char) -> i32 {
     -1
 }
 
+fn add_high_card_ranks(ranks: &mut Vec<i32>, frequencies: &HashMap<char, u32>) {
+    let mut new_ranks: Vec<i32> = vec![];
+    for (k, v) in frequencies.into_iter().filter(|(_, v)| **v == 1) {
+        new_ranks.push(get_card_rank(&k));
+    }
+
+    new_ranks.sort();
+    ranks.append(&mut new_ranks);
+}
+
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 enum CamelHandType {
     FiveOfKind,
@@ -78,14 +88,9 @@ impl CamelHand<'_> {
             hand.camel_type = CamelHandType::OnePair;
         } else {
             hand.ranks.clear();
-            for (k, _v) in frequency {
-                hand.ranks.push(get_card_rank(&k));
-            }
+            add_high_card_ranks(&mut hand.ranks, &frequency);
             hand.camel_type = CamelHandType::HighCard;
-            hand.ranks.sort();
         }
-
-        // hand.ranks.sort_by(|a, b| b.cmp(a));
 
         hand
     }
@@ -110,6 +115,7 @@ impl CamelHand<'_> {
             if *v == 4 {
                 self.ranks.push(get_card_rank(k));
                 self.ranks.sort();
+                add_high_card_ranks(&mut self.ranks, card_frequencies);
                 return true;
             }
         }
@@ -135,9 +141,11 @@ impl CamelHand<'_> {
             for (k, v) in card_frequencies.into_iter() {
                 if *v == 2 {
                     self.ranks.push(get_card_rank(k));
+                    add_high_card_ranks(&mut self.ranks, card_frequencies);
+                    return true;
                 }
             }
-            self.ranks.sort();
+
             return false;
         }
     }
@@ -149,6 +157,7 @@ impl CamelHand<'_> {
             if *v == 3 {
                 self.ranks.push(get_card_rank(k));
                 self.ranks.sort();
+                add_high_card_ranks(&mut self.ranks, card_frequencies);
                 return true;
             }
         }
@@ -168,6 +177,7 @@ impl CamelHand<'_> {
                 self.ranks.push(r)
             }
             self.ranks.sort();
+            add_high_card_ranks(&mut self.ranks, card_frequencies);
             return true;
         }
         false
@@ -179,6 +189,7 @@ impl CamelHand<'_> {
         for (k, v) in card_frequencies.into_iter() {
             if *v == 2 {
                 self.ranks.push(get_card_rank(k));
+                add_high_card_ranks(&mut self.ranks, card_frequencies);
                 return true;
             }
         }
@@ -200,7 +211,15 @@ pub fn solve(filepath: &str) -> String {
     hands.sort_unstable_by_key(|item| (item.camel_type, item.ranks.clone()));
 
     for h in &hands {
-        dbg!(h);
+        match h.camel_type {
+            CamelHandType::HighCard     => { },
+            CamelHandType::OnePair      => { },
+            CamelHandType::TwoPair      => { },
+            CamelHandType::ThreeOfKind  => { },
+            CamelHandType::FullHouse    => { },
+            CamelHandType::FourOfKind   => { },
+            CamelHandType::FiveOfKind   => { },
+        }
     }
 
     hands.into_iter()
