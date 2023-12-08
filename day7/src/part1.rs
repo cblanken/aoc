@@ -208,7 +208,7 @@ pub fn solve(filepath: &str) -> String {
 
 
     // hands.sort_by(|a, b| a.camel_type.cmp(&b.camel_type));
-    hands.sort_unstable_by_key(|item| (item.camel_type, item.ranks.clone()));
+    hands.sort_unstable_by_key(|item| (item.camel_type, item.cards.chars().map(|c| get_card_rank(&c)).collect::<Vec<i32>>()));
 
     for h in &hands {
         match h.camel_type {
@@ -220,6 +220,8 @@ pub fn solve(filepath: &str) -> String {
             CamelHandType::FourOfKind   => { },
             CamelHandType::FiveOfKind   => { },
         }
+
+        // dbg!(h);
     }
 
     hands.into_iter()
