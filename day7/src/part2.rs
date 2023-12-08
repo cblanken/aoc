@@ -8,7 +8,6 @@ const CARD_RANKS: [char; 13] = [
     'A',
     'K',
     'Q',
-    'J',
     'T',
     '9',
     '8',
@@ -18,6 +17,7 @@ const CARD_RANKS: [char; 13] = [
     '4',
     '3',
     '2',
+    'J',
 ];
 
 fn get_card_rank(c: &char) -> i32 {
@@ -91,8 +91,9 @@ impl CamelHand<'_> {
     }
 
     fn is_five_of_kind(&mut self, card_frequencies: &HashMap<char, u32>) -> bool {
+        let j_count = card_frequencies.get(&'J').unwrap_or(&0);
         for (k, v) in card_frequencies.into_iter() {
-            if *v == 5 {
+            if *v == 5 || *v + j_count == 5 {
                 self.ranks.push(get_card_rank(k));
                 self.ranks.sort();
                 return true;
@@ -103,8 +104,9 @@ impl CamelHand<'_> {
     }
 
     fn is_four_of_kind(&mut self, card_frequencies: &HashMap<char, u32>) -> bool {
+        let j_count = card_frequencies.get(&'J').unwrap_or(&0);
         for (k, v) in card_frequencies.into_iter() {
-            if *v == 4 {
+            if *k != 'J' && (*v == 4 || *v + j_count >= 4) {
                 self.ranks.push(get_card_rank(k));
                 self.ranks.sort();
                 add_high_card_ranks(&mut self.ranks, card_frequencies);
@@ -115,12 +117,18 @@ impl CamelHand<'_> {
     }
 
     fn is_full_house(&mut self, card_frequencies: &HashMap<char, u32>) -> bool {
+        let mut j_count: u32 = *card_frequencies.get(&'J').unwrap_or(&0);
         let mut has_three_group = false;
+        let mut three_group_char: char = ' ';
         for (k, v) in card_frequencies.into_iter() {
-            if *v == 3 {
+            if *k != 'J' && (*v == 3 || *v + j_count == 3) {
                 self.ranks.push(get_card_rank(k));
                 self.ranks.sort();
+                three_group_char = *k;
                 has_three_group = true;
+                if *v + j_count == 3 && j_count > 0 {
+                    j_count = 0;
+                }
             }
         }
 
@@ -128,7 +136,7 @@ impl CamelHand<'_> {
             return false;
         } else {
             for (k, v) in card_frequencies.into_iter() {
-                if *v == 2 {
+                if *k != 'J' && *k != three_group_char && (*v == 2 || *v + j_count == 2) {
                     self.ranks.push(get_card_rank(k));
                     add_high_card_ranks(&mut self.ranks, card_frequencies);
                     return true;
@@ -140,8 +148,9 @@ impl CamelHand<'_> {
     }
 
     fn is_three_of_kind(&mut self, card_frequencies: &HashMap<char, u32>) -> bool {
+        let j_count: u32 = *card_frequencies.get(&'J').unwrap_or(&0);
         for (k, v) in card_frequencies.into_iter() {
-            if *v == 3 {
+            if *k != 'J' && (*v == 3 || *v + j_count >= 3) {
                 self.ranks.push(get_card_rank(k));
                 self.ranks.sort();
                 add_high_card_ranks(&mut self.ranks, card_frequencies);
@@ -152,10 +161,12 @@ impl CamelHand<'_> {
     }
 
     fn is_two_pair(&mut self, card_frequencies: &HashMap<char, u32>) -> bool {
+        let mut j_count: u32 = *card_frequencies.get(&'J').unwrap_or(&0);
         let mut pair_ranks: Vec<i32> = vec![];
         for (k, v) in card_frequencies.into_iter() {
-            if *v == 2 {
-                pair_ranks.push(get_card_rank(k))
+            if *k != 'J' && (*v == 2 || *v + j_count >= 2) {
+                pair_ranks.push(get_card_rank(k));
+                j_count = 2 - *v;
             }
         }
 
@@ -171,8 +182,9 @@ impl CamelHand<'_> {
     }
 
     fn is_one_pair(&mut self, card_frequencies: &HashMap<char, u32>) -> bool {
+        let j_count: u32 = *card_frequencies.get(&'J').unwrap_or(&0);
         for (k, v) in card_frequencies.into_iter() {
-            if *v == 2 {
+            if *k != 'J' && (*v == 2 || *v + j_count >= 2) {
                 self.ranks.push(get_card_rank(k));
                 add_high_card_ranks(&mut self.ranks, card_frequencies);
                 return true;
@@ -203,8 +215,7 @@ pub fn solve(filepath: &str) -> String {
             CamelHandType::FourOfKind   => { },
             CamelHandType::FiveOfKind   => { },
         }
-
-        // dbg!(h);
+        // println!("{:?} - {:?} - {:?}", h.cards, h.camel_type, h.bid);
     }
 
     hands.into_iter()
