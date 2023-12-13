@@ -79,7 +79,7 @@ fn build_loop(start_pos: (usize, usize), map: &mut Vec<Vec<char>>) -> Vec<(usize
     loop {
         let next_pos: (usize, usize);
         (next_pos, dir) = get_next_loop_pos(dir, curr_pos, map[curr_pos.0][curr_pos.1], max_x, max_y);
-        dbg!(map[next_pos.0][next_pos.1], &dir);
+        // dbg!(map[next_pos.0][next_pos.1], &dir);
         loop_node_positions.push(next_pos);
 
         // Complete loop
