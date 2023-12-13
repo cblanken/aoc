@@ -228,5 +228,7 @@ pub fn solve(filepath: &str) -> String {
         sum += (path.unwrap().1.len() - 1) as u64;
     }
 
+    //  TODO: use Manhattan distance calc from part 2 instead of expensive A*
+
     sum.to_string()
 }
