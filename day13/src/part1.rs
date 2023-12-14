@@ -50,7 +50,7 @@ impl MirrorMap {
         // so the `col` will refer to the space between
         // `col` + 1 and `col` on the `map`
         assert!(col > 0);
-        assert!(col < self.width - 1);
+        assert!(col < self.width);
 
 
         // d = distance from center line
@@ -67,19 +67,7 @@ impl MirrorMap {
             }
         }
 
-        // d = distance from center line
-        let mut is_reflected_on_col = true;
-        for d in 0..=col.min(self.width-1-col) {
-            for r in 0..self.height {
-                if self.map[r][col-d] != self.map[r][col+d] {
-                    is_reflected_on_col = false;
-                    break
-                }
-            }
-        }
-
-        // dbg!(col, is_reflected_between_col, is_reflected_on_col);
-        is_reflected_on_col || is_reflected_between_col
+        is_reflected_between_col
     }
 
     fn is_vertical_reflection(&self, row: usize) -> bool {
@@ -87,47 +75,32 @@ impl MirrorMap {
         // so the `row` will refer to the space between
         // `row` + 1 and `row` on the `map`
         assert!(row > 0);
-        assert!(row < self.height - 1);
+        assert!(row < self.height);
 
         // d = distance from center line
         let mut is_reflected_between_row = true;
-        for d in 0..=row.min(self.height-1-row) {
+        for d in 0..row.min(self.height-row) {
             for c in 0..self.width {
-                if row-d == 0 {
-                    break
-                }
                 if self.map[row-d-1][c] != self.map[row+d][c] {
+                    // dbg!("NOT REFLECTED BETWEEN ROW", row, d, c, self.map[row-d-1][c], self.map[row+d][c]);
                     is_reflected_between_row = false;
                     break
                 }
             }
         }
 
-        // d = distance from center line
-        let mut is_reflected_on_row = true;
-        for d in 0..=row.min(self.height-1-row) {
-            for c in 0..self.width {
-                if self.map[row-d][c] != self.map[row+d][c] {
-                    is_reflected_on_row = false;
-                    break
-                }
-            }
-        }
-
-        // dbg!(row, is_reflected_between_row, is_reflected_on_row);
-        is_reflected_on_row || is_reflected_between_row
-
+        is_reflected_between_row
     }
 
     fn find_vertical_reflections(&self) -> Vec<usize> {
         // Return indexes of vertical reflections
-        (1..self.height-1).filter(|n| self.is_vertical_reflection(*n)).collect()
+        (1..self.height).filter(|n| self.is_vertical_reflection(*n)).collect()
         
     }
 
     fn find_horizontal_reflections(&self) -> Vec<usize> {
         // Return indexes of horizontal reflections
-        (1..self.width-1).filter(|n| self.is_horizontal_reflection(*n)).collect()
+        (1..self.width).filter(|n| self.is_horizontal_reflection(*n)).collect()
     }
 }
 
@@ -165,8 +138,16 @@ pub fn solve(filepath: &str) -> String {
     // dbg!(maps[0].is_horizontal_reflection(9));
 
     for m in &maps {
+        // if m.horizontal_reflections.len() == 0 && m.vertical_reflections.len() == 0 {
+        //     print!("NO REFLECTION FOUND! \n{}", m);
+        // }
         print!("{}", m);
     }
 
+    // let t = maps.get(maps.len()-4).unwrap();
+    // println!("{}", t); 
+    // println!("{}", t.summarize());
+
+    // "p".to_string()
     maps.into_iter().fold(0, |acc, m| acc + m.summarize()).to_string()
 }

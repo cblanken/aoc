@@ -10,5 +10,3 @@ fn main() {
     println!("Part 1: {}", part1::solve(INPUT_FILE_PATH));
     // println!("Part 2: {}", part2::solve(INPUT_FILE_PATH));
 }
-
-// 30096 is too low
