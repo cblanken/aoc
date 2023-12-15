@@ -11,8 +11,6 @@ pub fn solve(filepath: &str) -> String {
     let lines: Vec<&str> = data.lines().collect();
     let directions = lines[0];
 
-
-
     // Add graph nodes
     let mut graph = Graph::<String, _>::new();
     for line in &lines[2..] {
@@ -44,55 +42,45 @@ pub fn solve(filepath: &str) -> String {
         lr_index = (lr_index + 1) % 2;
     }
 
-    dbg!(&graph);
-
-
-    let mut steps = 0;
-    let mut dir_index = 0;
-    // let mut curr_node = graph.node_indices().find(|i| graph[*i] == "AAA").unwrap();
-
     let mut active_nodes: Vec<NodeIndex> = graph.node_indices()
         .filter(|i| graph[*i].chars().rev().collect::<Vec<char>>()[0] == 'A')
         .collect();
 
-    let node_cnt = active_nodes.clone().len();
-    let mut finished_nodes: Vec<NodeIndex> = vec![];
-
-    while finished_nodes.len() < node_cnt {
-        for curr_node in active_nodes {
-            let mut edges = graph.neighbors(curr_node).detach();
+    let active_node_cnt = active_nodes.len();
+    let mut dir_index = 0;
+    let mut step_cnt: u128 = 0;
+    loop {
+        for i in 0..active_node_cnt {
+            let mut edges = graph.neighbors(active_nodes[i]).detach();
             while let Some(edge) = edges.next_edge(&graph) {
+                let edge_endpoints = graph.edge_endpoints(edge).unwrap();
                 let weight = graph.edge_weight(edge).unwrap();
                 let dir = &directions.chars().collect::<Vec<char>>()[dir_index];
-                dbg!(graph.node_weight(curr_node), weight, dir);
+                // dbg!(graph.node_weight(active_nodes[i]), weight, dir, edge_endpoints);
                 if weight == dir {
-                    curr_node = graph.edge_endpoints(edge).unwrap().1;
+                    let target_node_index = edge_endpoints.1;
+                    active_nodes[i] = target_node_index;
                     break;
                 }
             }
         }
+
+        step_cnt += 1;
+        if step_cnt % 50000 == 0 {
+            println!("Step count: {step_cnt}");
+        }
+        // if active_nodes.clone().into_iter().all(|i| graph[i].chars().rev().collect::<Vec<char>>()[0] == 'Z') {
+        if active_nodes.iter().all(|i| graph[*i].chars().nth(2).unwrap() == 'Z') {
+            println!("ALL NODES IN FINAL POSITIONS");
+            dbg!(&active_nodes);
+            break;
+        }
+        dir_index = (dir_index + 1) % directions.len();
     }
-
-    // while graph.node_weight(curr_node).unwrap() != "ZZZ" {
-    //     let mut edges = graph.neighbors(curr_node).detach();
-    //     while let Some(edge) = edges.next_edge(&graph) {
-    //         let weight = graph.edge_weight(edge).unwrap();
-    //         let dir = &directions.chars().collect::<Vec<char>>()[dir_index];
-    //         dbg!(graph.node_weight(curr_node), weight, dir);
-    //         if weight == dir {
-    //             curr_node = graph.edge_endpoints(edge).unwrap().1;
-    //             break;
-    //         }
-    //     }
-    //     dir_index = (dir_index + 1) % directions.len();
-    //     steps += 1;
-    // }
-
-
 
     // for n in node_map_dup.values() {
     //     println!("{:?} - {:?}", n.name, n.nodes)
     // }
 
-    steps.to_string()
+    step_cnt.to_string()
 }
