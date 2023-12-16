@@ -45,6 +45,15 @@ impl SpringConditionRecord {
             if self.spring_state[w.start..w.end].contains('.') {
                 return false
             }
+
+            // Check one tile left and right of current range for 'blocking' broken springs
+            let last_i = self.spring_state.len() - 1;
+            if  (w.start > 0 && &self.spring_state[w.start..w.start+1] == "#") ||
+                (w.end < self.spring_state.len()-1 && &self.spring_state[last_i..last_i+1] == "#") ||
+                (w.start == 0 && &self.spring_state[w.end..w.end+1] == "#") ||
+                (w.end >= last_i && &self.spring_state[w.start-1..w.start] == "#") {
+                return false
+            }
         }
 
         true
