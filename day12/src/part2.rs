@@ -88,10 +88,11 @@ impl SpringConditionRecord {
             // Iterate from the 2nd to last endpoint+1 to the maximum allowed index for the final window
             // for _i in current_windows[last_index-1].end+1..self.allowed_start_ranges[last_index].end {
             for _i in current_windows[last_index].start+1..=self.allowed_start_ranges[last_index].end+1 {
-                if self.is_combination_valid(current_windows) {
+                let is_valid = self.is_combination_valid(current_windows, window_index);
+                if is_valid {
                     sum += 1;
                 }
-                println!("Checked combination: {:?} - {}", current_windows, if self.is_combination_valid(current_windows) { "MATCH" } else {""});
+                println!("Checked combination: {:?} - {}", current_windows, if is_valid { "MATCH" } else {""});
 
                 // Move final window right by 1
                 slide_window(current_windows, window_index, 1);
