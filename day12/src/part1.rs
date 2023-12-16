@@ -22,7 +22,7 @@ fn slide_window(windows: &mut Vec<Range<usize>>, curr_index: usize, distance: us
 struct SpringConditionRecord {
     spring_state: String,
     cgds: Vec<usize>, // Contiguous Group sizes of Damaged Springs
-    // total_springs: usize,
+    total_springs: usize,
     allowed_start_ranges: Vec<Range<usize>>,
 }
 
@@ -31,7 +31,7 @@ impl SpringConditionRecord {
         let mut sr = SpringConditionRecord {
             spring_state: spring_state.to_string(),
             cgds: cgds.clone(),
-            // total_springs: cgds.into_iter().fold(0, |acc, s| acc + s),
+            total_springs: cgds.into_iter().fold(0, |acc, s| acc + s),
             allowed_start_ranges: vec![],
         };
 
@@ -41,18 +41,28 @@ impl SpringConditionRecord {
     }
 
     fn is_combination_valid(&self, windows: &Vec<Range<usize>>) -> bool {
+        let last_i = self.spring_state.len() - 1;
         for w in windows {
             if self.spring_state[w.start..w.end].contains('.') {
-                return false
-            }
+                // dbg!("1 false");
+                return false;
+            } 
 
             // Check one tile left and right of current range for 'blocking' broken springs
-            let last_i = self.spring_state.len() - 1;
-            if  (w.start > 0 && &self.spring_state[w.start..w.start+1] == "#") ||
-                (w.end < self.spring_state.len()-1 && &self.spring_state[last_i..last_i+1] == "#") ||
+            if  (w.start > 0 && w.end < last_i && &self.spring_state[w.start..=w.start+1] == "#") ||
+                // (w.end < last_i && &self.spring_state[last_i..last_i+1] == "#") || // TODO FIX THIS?
                 (w.start == 0 && &self.spring_state[w.end..w.end+1] == "#") ||
                 (w.end >= last_i && &self.spring_state[w.start-1..w.start] == "#") {
-                return false
+                // dbg!("2 false", w);
+                return false;
+            }
+
+            // Check for 'broken spring' not specified by one of the provided ranges
+            for (i, c) in self.spring_state.chars().enumerate() {
+                if c == '#' && !windows.iter().any(|w| w.contains(&i)) {
+                    // dbg!("3 false");
+                    return false;
+                }
             }
         }
 
@@ -65,53 +75,59 @@ impl SpringConditionRecord {
         assert!(window_index < current_windows.len());
 
         let mut sum = 0;
-        // let current_window = &current_windows[window_index];
 
-        println!("> Depth: {}", depth);
+        // println!("> Depth: {}", depth);
         // dbg!(&current_windows);
 
         // Reached final window, must check all combinations of final window
         // with the given `current_windows` and return sum
         let last_index = current_windows.len() - 1;
         if window_index == last_index {
-            println!("REACHED FINAL WINDOW: {:?}", current_windows);
+            // println!("REACHED FINAL WINDOW: {:?}", current_windows);
 
             // Iterate from the 2nd to last endpoint+1 to the maximum allowed index for the final window
             // for _i in current_windows[last_index-1].end+1..self.allowed_start_ranges[last_index].end {
-            for _i in current_windows[last_index].start+1..=self.allowed_start_ranges[last_index].end {
+            for _i in current_windows[last_index].start+1..=self.allowed_start_ranges[last_index].end+1 {
                 if self.is_combination_valid(current_windows) {
                     sum += 1;
                 }
-                println!("Checked combination: {:?} - {}", current_windows, sum);
+                println!("Checked combination: {:?} - {}", current_windows, if self.is_combination_valid(current_windows) { "MATCH" } else {""});
 
                 // Move final window right by 1
                 slide_window(current_windows, window_index, 1);
             }
 
             // Reset final window position
+            // println!("RESET FINAL WINDOW!, {:?}", current_windows);
             current_windows[last_index] = Range {
                 start: current_windows[last_index-1].end + 1,
                 end: current_windows[last_index-1].end + 1 + current_windows[last_index].len(),
             };
-
-            return sum;
-
-        } else if current_windows[window_index].start <= self.allowed_start_ranges[window_index].end {
-            // Current window still in allowed range and can be slid to the right
-                sum += self.count_valid_combinations(current_windows, window_index+1, depth+1); 
-                println!("SLIDING WINDOW: {:?}", &current_windows);
-                slide_windows_starting_at(current_windows, window_index);
-                println!("SLID WINDOW + 1: {:?}", &current_windows);
-                // current_windows[window_index].start += 1;
-                // current_windows[window_index].end += 1;
-                // Current window can't be slid to the right anymore, so return
         } else {
-            println!("CANT SLIDE WINDOW ANYMORE: {:?}", current_windows);
-            return sum;
+            let windows_copy = current_windows.clone();
+            for _i in current_windows[window_index].start+1..=self.allowed_start_ranges[window_index].end {
+                sum += self.count_valid_combinations(current_windows, window_index+1, depth+1); 
+                // println!("SLIDING WINDOW: {:?}", &current_windows);
+                // Reset window positions
+                slide_windows_starting_at(current_windows, window_index);
+                // println!("SLID WINDOWS + 1: {:?}", &current_windows);
+            }
+
+            // println!("RESET WINDOWS: {:?}, windex: {}", current_windows, window_index);
+            for i in window_index..current_windows.len() {
+
+                if i == 0 { continue }
+
+                current_windows[i] = Range {
+                    start: current_windows[i-1].end + 1,
+                    end: current_windows[i-1].end + 1 + self.cgds[i],
+                };
+            }
+
+            // println!("! RESETTED WINDOWS: {:?}", current_windows);
         }
 
-        // return sum;
-        sum + self.count_valid_combinations(current_windows, window_index+1, depth+1)
+        sum
     }
 
     fn get_allowed_start_ranges(&self) -> Vec<Range<usize>> {
@@ -166,7 +182,7 @@ pub fn solve(filepath: &str) -> String {
 
     // dbg!(&records[0]);
     
-    records.iter().fold(0, |acc, r| {
+    records.into_iter().fold(0, |acc, mut r| {
         let count = r.get_valid_combination_count();
         println!("COUNT > {}", count);
         acc + count
