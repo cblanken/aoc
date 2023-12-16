@@ -1,6 +1,6 @@
 use aoc_utils::print_file;
 mod part1;
-// mod part2;
+mod part2;
 
 static INPUT_FILE_PATH: &str = "input.txt";
 
