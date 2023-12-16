@@ -104,8 +104,27 @@ impl SpringConditionRecord {
                 end: current_windows[last_index-1].end + 1 + current_windows[last_index].len(),
             };
         } else {
-            let windows_copy = current_windows.clone();
             for _i in current_windows[window_index].start+1..=self.allowed_start_ranges[window_index].end {
+
+                // Skip recursing if `current_window` can't possibly match
+                let w = &current_windows[window_index];
+                if self.spring_state[w.start..w.end].contains('.') {
+                    // dbg!("1 false");
+                    slide_windows_starting_at(current_windows, window_index);
+                    continue
+                } 
+                // Check one tile left and right of current range for 'blocking' broken springs
+                let last_i = self.spring_state.len() - 1;
+                if  w.end < last_i && &self.spring_state[w.end..w.end+1] == "#" || 
+                    w.start > 0 && &self.spring_state[w.start-1..w.start] == "#" {
+                    // (w.end < last_i && &self.spring_state[last_i..last_i+1] == "#") || // TODO FIX THIS?
+                    // (w.start == 0 && &self.spring_state[w.end..w.end+1] == "#") ||
+                    // (w.end >= last_i && &self.spring_state[w.start-1..w.start] == "#") {
+                    // dbg!("2 false", w);
+                    slide_windows_starting_at(current_windows, window_index);
+                    continue;
+                }
+
                 sum += self.count_valid_combinations(current_windows, window_index+1, depth+1); 
                 // println!("SLIDING WINDOW: {:?}", &current_windows);
                 // Reset window positions
@@ -176,7 +195,7 @@ pub fn solve(filepath: &str) -> String {
             SpringConditionRecord::new(
                 &format!("{}?", &split[0]).repeat(5)[..(split[0].len()+1)*5 - 1],
                 format!("{},", &split[1]).repeat(5)[..(split[1].len()+1)*5 - 1].split(',').map(|n| n.parse::<usize>().unwrap()).collect(),
-                    // .split(',').map(|n| n.parse::<usize>().unwrap()).collect(),
+                // split[0],
                 // split[1].split(',').map(|n| n.parse::<usize>().unwrap()).collect()
             )
         })
