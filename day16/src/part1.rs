@@ -15,12 +15,14 @@ enum DIR {
 #[derive(Clone, Copy, Debug)]
 struct Pos(i32, i32);
 
+type BeamBranch = Vec<Pos>;
+
 struct LightGrid {
     grid: Vec<Vec<char>>,
     egrid: Vec<Vec<u32>>, // energized tile counts
     width: i32,
     height: i32,
-    energize_count: u32,
+    energize_action_count: u32,
     max_depth: u32,
 }
 
@@ -36,14 +38,15 @@ impl LightGrid {
             egrid,
             height,
             width,
-            energize_count: 0,
+            energize_action_count: 0,
             max_depth: 10,
         }
     }
 
     fn energize_cell(&mut self, pos: Pos) {
+        // println!("ENGERGIZING: {pos:?}");
         self.egrid[pos.0 as usize][pos.1 as usize] += 1;
-        self.energize_count += 1;
+        self.energize_action_count += 1;
     }
 
     fn get_energized_tile_count(&self) -> u32 {
@@ -54,20 +57,36 @@ impl LightGrid {
 
     fn energize(&mut self, pos: Pos, dir: DIR, depth: u32) {
         if depth > self.max_depth {
-            return
+            self.max_depth = depth;
+            // return
         }
 
-        // dbg!(&pos, &dir);
+
+        // DEBUG PROMPTS
+        println!("{self}");
+        let mut buffer = String::new();
+        let stdin = io::stdin();
+        stdin.read_line(&mut buffer);
+
 
         // Outside of grid
         if  pos.0 < 0 || pos.0 > self.height - 1 ||
-            pos.1 < 0 || pos.1 > self.width - 1 || 
-            self.grid[pos.0 as usize][pos.1 as usize] == '#' {
+            pos.1 < 0 || pos.1 > self.width - 1 {
             return
         }
 
+        let egrid_target = self.egrid[pos.0 as usize][pos.1 as usize];
+        let grid_target = self.grid[pos.0 as usize][pos.1 as usize];
+
+        // TODO: add path tracking for each beam and return
+        // if revisited tile creates loop
+        if egrid_target > 1 && "|-".find(grid_target).is_some() {
+            return
+        }
+
+
         // Or redirect if mirror ('/', '\') found
-        if self.grid[pos.0 as usize][pos.1 as usize] == '/' {
+        if grid_target == '/' {
             self.energize_cell(pos);
             match dir {
                 DIR::NORTH  => self.energize(Pos(pos.0, pos.1+1), DIR::EAST, depth+1),
@@ -77,7 +96,7 @@ impl LightGrid {
             }
 
             return
-        } else if self.grid[pos.0 as usize][pos.1 as usize] == '\\' {
+        } else if grid_target == '\\' {
             self.energize_cell(pos);
             match dir {
                 DIR::NORTH  => self.energize(Pos(pos.0, pos.1-1), DIR::WEST, depth+1),
@@ -90,8 +109,8 @@ impl LightGrid {
         }
 
         // Split beam if splitter ('|', '-') found
-        if self.grid[pos.0 as usize][pos.1 as usize] == '|' {
-            if self.egrid[pos.0 as usize][pos.1 as usize] == 0 {
+        if grid_target == '|' {
+            if egrid_target == 0 {
                 self.energize_cell(pos);
                 match dir {
                     DIR::EAST | DIR::WEST => {
@@ -102,8 +121,8 @@ impl LightGrid {
                     _ => {}
                 }
             }
-        } else if self.grid[pos.0 as usize][pos.1 as usize] == '-' {
-            if self.egrid[pos.0 as usize][pos.1 as usize] == 0 {
+        } else if grid_target == '-' {
+            if egrid_target == 0 {
                 self.energize_cell(pos);
                 match dir {
                     DIR::NORTH | DIR::SOUTH => {
@@ -130,13 +149,14 @@ impl LightGrid {
 
 impl fmt::Display for LightGrid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "===========================================").unwrap();
-        for r in &self.grid {
-            for c in r {
-                write!(f, "{c}").unwrap();
-            }
-            writeln!(f, "").unwrap();
-        }
+        writeln!(f, "==================================================================").unwrap();
+        // for r in &self.grid {
+        //     for c in r {
+        //         write!(f, "{c}").unwrap();
+        //     }
+        //     writeln!(f, "").unwrap();
+        // }
+
         writeln!(f, "").unwrap();
         for r in &self.egrid {
             for n in r {
@@ -149,12 +169,13 @@ impl fmt::Display for LightGrid {
             writeln!(f, "").unwrap();
         }
 
-        writeln!(f, "\nW:{}, H:{}, Energize actions: {}, Energized tiles: {}",
+        writeln!(f, "\nW:{}, H:{}, Max Depth:{}, Energize actions: {}, Energized tiles: {}",
             self.width,
             self.height,
-            self.energize_count,
+            self.max_depth,
+            self.energize_action_count,
             self.get_energized_tile_count()).unwrap();
-        writeln!(f, "===========================================")
+        writeln!(f, "==================================================================")
     }
 }
 
@@ -171,20 +192,28 @@ pub fn solve(filepath: &str) -> String {
 
     let mut lgrid = LightGrid::new(grid);
 
-    for i in 600..700 {
-        lgrid.egrid = vec![vec![0; lgrid.width as usize]; lgrid.height as usize];
-        lgrid.max_depth = i;
-        lgrid.energize(Pos(0, 0), DIR::EAST, 0);
-        println!("{}", lgrid);
+    // let mut running_count = 0;
+    // for i in 0..1000 {
+    // // for i in 158..1000 {
+    //     lgrid.egrid = vec![vec![0; lgrid.width as usize]; lgrid.height as usize];
+    //     lgrid.max_depth = i;
+    //     lgrid.energize(Pos(0, 0), DIR::EAST, 0);
+    //     println!("{}", lgrid);
+    //     let ecount = lgrid.get_energized_tile_count();
+    //     if ecount < running_count {
+    //         println!("ECOUNT DROPPED from {running_count} to {ecount}");
+    //     }
+    //     println!("{i:>5} > ecount: {ecount}");
+    //     running_count = ecount;
 
-        let mut buffer = String::new();
-        let stdin = io::stdin(); // We get `Stdin` here.
-        stdin.read_line(&mut buffer);
-    }
+    //     let mut buffer = String::new();
+    //     let stdin = io::stdin(); // We get `Stdin` here.
+    //     stdin.read_line(&mut buffer);
+    // }
 
-    // lgrid.max_depth = 650;
-    // lgrid.energize(Pos(0, 0), DIR::EAST, 0);
-    // println!("{}", lgrid);
+    lgrid.max_depth = 0;
+    lgrid.energize(Pos(0, 0), DIR::EAST, 0);
+    println!("{}", lgrid);
 
     lgrid.get_energized_tile_count().to_string()
 }

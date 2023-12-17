@@ -2,7 +2,7 @@ use aoc_utils::print_file;
 mod part1;
 // mod part2;
 
-static INPUT_FILE_PATH: &str = "sample1.txt";
+static INPUT_FILE_PATH: &str = "input.txt";
 
 fn main() {
     print_file(INPUT_FILE_PATH);
@@ -13,3 +13,6 @@ fn main() {
 
 // Part 1
 // 9287 is too high
+// 6594 is too low
+//
+// 6947 is not correct
