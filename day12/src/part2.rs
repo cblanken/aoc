@@ -22,7 +22,8 @@ fn slide_window(windows: &mut Vec<Range<usize>>, curr_index: usize, distance: us
 struct SpringConditionRecord {
     spring_state: String,
     cgds: Vec<usize>, // Contiguous Group sizes of Damaged Springs
-    total_springs: usize,
+    damaged_spring_ranges: Vec<Range<usize>>,
+    total_damaged_springs: usize,
     allowed_start_ranges: Vec<Range<usize>>,
 }
 
@@ -31,38 +32,46 @@ impl SpringConditionRecord {
         let mut sr = SpringConditionRecord {
             spring_state: spring_state.to_string(),
             cgds: cgds.clone(),
-            total_springs: cgds.into_iter().fold(0, |acc, s| acc + s),
+            damaged_spring_ranges: vec![],
+            total_damaged_springs: cgds.into_iter().fold(0, |acc, s| acc + s),
             allowed_start_ranges: vec![],
         };
+
+        let mut broken_spring_index = vec![];
+        for (i, c) in sr.spring_state.chars().enumerate() {
+            if c == '#' {
+                broken_spring_index.push(i);
+            }
+        }
+
 
         sr.allowed_start_ranges = sr.get_allowed_start_ranges();
 
         sr
     }
 
-    fn is_combination_valid(&self, windows: &Vec<Range<usize>>) -> bool {
+    fn is_combination_valid(&self, windows: &Vec<Range<usize>>, window_index: usize) -> bool {
+        // let last_i = self.spring_state.len() - 1;
+
+
+        let w = &windows[window_index];
+        if self.spring_state[w.start..w.end].contains('.') {
+            // dbg!("1 false");
+            return false;
+        } 
+
+        // Check one tile left and right of current range for 'blocking' broken springs
         let last_i = self.spring_state.len() - 1;
-        for w in windows {
-            if self.spring_state[w.start..w.end].contains('.') {
-                // dbg!("1 false");
-                return false;
-            } 
+        if  w.end < last_i && &self.spring_state[w.end..w.end+1] == "#" || 
+            w.start > 0 && &self.spring_state[w.start-1..w.start] == "#" {
+            return false;
+        }
 
-            // Check one tile left and right of current range for 'blocking' broken springs
-            if  (w.start > 0 && w.end < last_i && &self.spring_state[w.start..=w.start+1] == "#") ||
-                // (w.end < last_i && &self.spring_state[last_i..last_i+1] == "#") || // TODO FIX THIS?
-                (w.start == 0 && &self.spring_state[w.end..w.end+1] == "#") ||
-                (w.end >= last_i && &self.spring_state[w.start-1..w.start] == "#") {
-                // dbg!("2 false", w);
+        // Check for 'broken spring' not specified by one of the provided ranges
+        for (i, c) in self.spring_state.chars().enumerate() {
+            if c == '#' && !windows.iter().any(|w| w.contains(&i)) {
+                // dbg!("3 false");
                 return false;
-            }
-
-            // Check for 'broken spring' not specified by one of the provided ranges
-            for (i, c) in self.spring_state.chars().enumerate() {
-                if c == '#' && !windows.iter().any(|w| w.contains(&i)) {
-                    // dbg!("3 false");
-                    return false;
-                }
             }
         }
 
@@ -114,17 +123,21 @@ impl SpringConditionRecord {
                     slide_windows_starting_at(current_windows, window_index);
                     continue
                 } 
+
                 // Check one tile left and right of current range for 'blocking' broken springs
                 let last_i = self.spring_state.len() - 1;
                 if  w.end < last_i && &self.spring_state[w.end..w.end+1] == "#" || 
                     w.start > 0 && &self.spring_state[w.start-1..w.start] == "#" {
-                    // (w.end < last_i && &self.spring_state[last_i..last_i+1] == "#") || // TODO FIX THIS?
-                    // (w.start == 0 && &self.spring_state[w.end..w.end+1] == "#") ||
-                    // (w.end >= last_i && &self.spring_state[w.start-1..w.start] == "#") {
-                    // dbg!("2 false", w);
                     slide_windows_starting_at(current_windows, window_index);
                     continue;
                 }
+
+
+                // Check if `current_window` has passed a set of required "#" (damaged springs)
+                // and none of the other `windows` account for them, if so the potential matches
+                // can be discarded
+
+
 
                 sum += self.count_valid_combinations(current_windows, window_index+1, depth+1); 
                 // println!("SLIDING WINDOW: {:?}", &current_windows);
@@ -168,7 +181,7 @@ impl SpringConditionRecord {
     pub fn get_valid_combination_count(&self) -> usize {
         let mut sliding_windows: Vec<Range<usize>> = vec![];
         let allowed_window_start_ranges = self.get_allowed_start_ranges();
-        println!("ALLOWED RANGES: {:?}", &allowed_window_start_ranges);
+        // println!("ALLOWED RANGES: {:?}", &allowed_window_start_ranges);
 
 
         // Set initial sliding window positions
@@ -202,11 +215,18 @@ pub fn solve(filepath: &str) -> String {
         })
         .collect();
 
-    // dbg!(&records[0]);
     
-    records.into_iter().fold(0, |acc, mut r| {
+    // println!("{:?}", records);
+
+    let mut i = 0;
+    records.into_iter().fold(0, |acc, r| {
+        println!("{i}\tTESTING: {:?}", r.spring_state);
+
+
+
         let count = r.get_valid_combination_count();
-        println!("COUNT > {}", count);
+        println!("\tCOUNT: {}", count);
+        i += 1;
         acc + count
     }).to_string()
 
