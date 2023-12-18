@@ -10,9 +10,3 @@ fn main() {
     println!("Part 1: {}", part1::solve(INPUT_FILE_PATH));
     // println!("Part 2: {}", part2::solve(INPUT_FILE_PATH));
 }
-
-// Part 1
-// 9287 is too high
-// 6594 is too low
-//
-// 6947 is not correct

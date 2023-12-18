@@ -4,7 +4,7 @@ use std::io::prelude::*;
 
 use aoc_utils::read_file;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, PartialOrd)]
 enum DIR {
     NORTH,
     SOUTH,
@@ -44,7 +44,6 @@ impl LightGrid {
     }
 
     fn energize_cell(&mut self, pos: Pos) {
-        // println!("ENGERGIZING: {pos:?}");
         self.egrid[pos.0 as usize][pos.1 as usize] += 1;
         self.energize_action_count += 1;
     }
@@ -58,15 +57,14 @@ impl LightGrid {
     fn energize(&mut self, pos: Pos, dir: DIR, depth: u32) {
         if depth > self.max_depth {
             self.max_depth = depth;
-            // return
         }
 
 
-        // DEBUG PROMPTS
-        println!("{self}");
-        let mut buffer = String::new();
-        let stdin = io::stdin();
-        stdin.read_line(&mut buffer);
+        // // DEBUG PROMPTS
+        // println!("{self}");
+        // let mut buffer = String::new();
+        // let stdin = io::stdin();
+        // stdin.read_line(&mut buffer);
 
 
         // Outside of grid
@@ -78,12 +76,12 @@ impl LightGrid {
         let egrid_target = self.egrid[pos.0 as usize][pos.1 as usize];
         let grid_target = self.grid[pos.0 as usize][pos.1 as usize];
 
-        // TODO: add path tracking for each beam and return
-        // if revisited tile creates loop
-        if egrid_target > 1 && "|-".find(grid_target).is_some() {
+        // Cut off possible loops
+        if grid_target == '|' && egrid_target > 0 && (dir == DIR::EAST || dir == DIR::WEST) {
+            return
+        } else if grid_target == '-' && egrid_target > 0 && (dir == DIR::NORTH || dir == DIR::SOUTH) {
             return
         }
-
 
         // Or redirect if mirror ('/', '\') found
         if grid_target == '/' {
@@ -150,12 +148,12 @@ impl LightGrid {
 impl fmt::Display for LightGrid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "==================================================================").unwrap();
-        // for r in &self.grid {
-        //     for c in r {
-        //         write!(f, "{c}").unwrap();
-        //     }
-        //     writeln!(f, "").unwrap();
-        // }
+        for r in &self.grid {
+            for c in r {
+                write!(f, "{c}").unwrap();
+            }
+            writeln!(f, "").unwrap();
+        }
 
         writeln!(f, "").unwrap();
         for r in &self.egrid {
