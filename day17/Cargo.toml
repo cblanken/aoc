@@ -1,0 +1,8 @@
+[package]
+name = "day17"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aoc_utils = { package = "aoc_2023", path = ".." }
+petgraph = "0.6.4"
