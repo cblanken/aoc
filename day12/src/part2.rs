@@ -1,4 +1,4 @@
-use std::{ops::Range, thread::current};
+use std::{ops::{Range, Index}, thread::current};
 
 use aoc_utils::read_file;
 
@@ -25,6 +25,7 @@ struct SpringConditionRecord {
     damaged_spring_ranges: Vec<Range<usize>>,
     total_damaged_springs: usize,
     allowed_start_ranges: Vec<Range<usize>>,
+
 }
 
 impl SpringConditionRecord {
@@ -94,14 +95,19 @@ impl SpringConditionRecord {
         if window_index == last_index {
             // println!("REACHED FINAL WINDOW: {:?}", current_windows);
 
+            // current_windows[last_index] = self.allowed_start_ranges[last_index].start..self.allowed_start_ranges[last_index].start+self.cgds[last_index];
+
             // Iterate from the 2nd to last endpoint+1 to the maximum allowed index for the final window
-            // for _i in current_windows[last_index-1].end+1..self.allowed_start_ranges[last_index].end {
             for _i in current_windows[last_index].start+1..=self.allowed_start_ranges[last_index].end+1 {
-                let is_valid = self.is_combination_valid(current_windows, window_index);
+            // for _i in self.allowed_start_ranges[last_index].start..=self.allowed_start_ranges[last_index].end {
+                // dbg!(_i);
+                // current_windows[last_index] = _i.._i+self.cgds[last_index];
+                let is_valid = self.is_combination_valid(current_windows, last_index);
                 if is_valid {
                     sum += 1;
                 }
-                println!("Checked combination: {:?} - {}", current_windows, if is_valid { "MATCH" } else {""});
+                // println!("{:?} - Checked combination: {:?} - {}", self.allowed_start_ranges, current_windows, if is_valid { "MATCH" } else {""});
+                // println!("Checked combination: {:?} - {}", current_windows, if is_valid { "MATCH" } else {""});
 
                 // Move final window right by 1
                 slide_window(current_windows, window_index, 1);
@@ -165,6 +171,8 @@ impl SpringConditionRecord {
 
     fn get_allowed_start_ranges(&self) -> Vec<Range<usize>> {
         let mut allowed_window_start_ranges: Vec<Range<usize>> = vec![];
+
+        // Enumerate possible ranges required by '.' gap between windows
         for (i, _s) in self.cgds.iter().enumerate() {
             let left_sum: usize = self.cgds[..i].iter().sum::<usize>();
             let right_sum: usize = self.cgds[i..].iter().sum::<usize>();
@@ -174,6 +182,122 @@ impl SpringConditionRecord {
                 end: (self.spring_state.len()) - right_sum ,
             });
         }
+
+
+        // FROM LEFT SIDE
+        // Identify stricter ranges based on '#' sequences in `spring_state`
+        // for the 'first' and the 'last' windows (other interanal windows) either
+        // can't be 'locked' or it will be harder to determine
+        let r = &allowed_window_start_ranges[0];
+        let first_bad_spring = &self.spring_state[r.start..r.end].find('#');
+        let last_bad_spring: Option<usize>;
+
+
+        // Find contiguous range of bad springs (from left side) and limit current
+        // range (`r`) to overlap the hardcoded contiguous range
+        if let Some(mut i) = first_bad_spring {
+            // Find length of 'bad spring' sequence
+            // let mut i: usize = first_bad_spring.unwrap();
+            loop {
+                i += 1;
+                if self.spring_state.chars().nth(i).unwrap() != '#' || i >= r.end {
+                    last_bad_spring = Some(i);
+                    break
+                }
+            }
+
+
+            // TODO: make sure to count any '?' at the front to see if the 
+            // restricted sequence can be applied
+            
+            // Unknown spring count before first bad spring
+            let  unknown_count = self.spring_state
+                .chars()
+                .collect::<Vec<char>>()[0..r.start]
+                .iter()
+                .fold(0, |acc, c| if *c == '?' { acc + 1 } else { acc });
+
+            if unknown_count < self.cgds[0] {
+                // println!("RESTRICTING RANGE[0]");
+                if let (Some(a), Some(b)) = (first_bad_spring, last_bad_spring) {
+                    let size_diff = (r.end-r.start) - (b-a);
+                    let start: usize;
+                    if size_diff > *a {
+                        start = 0;
+                    } else {
+                        start = a - size_diff;
+                    }
+                    allowed_window_start_ranges[0] = Range {
+                        start,
+                        end: *a+1,
+                    }
+                }
+            }
+        }
+
+
+        // // FROM RIGHT SIDE
+        // // Identify stricter ranges based on '#' sequences in `spring_state`
+        // // for the 'first' and the 'last' windows (other interanal windows) either
+        // // can't be 'locked' or it will be harder to determine
+        // let r = &allowed_window_start_ranges[allowed_window_start_ranges.len()-1];
+        // let mut last_bad_spring = self.spring_state[r.start..].rfind('#');
+        // let first_bad_spring: Option<usize>;
+
+
+        // // Find contiguous range of bad springs (from left side) and limit current
+        // // range (`r`) to overlap the hardcoded contiguous range
+        // if let Some(mut i) = last_bad_spring {
+        //     // Find length of 'bad spring' sequence
+        //     // let mut i: usize = first_bad_spring.unwrap();
+        //     // last_bad_spring = Some(self.spring_state.len() - 1 - i);
+
+        //     // Fix `i`
+        //     last_bad_spring = Some(i + r.start);
+        //     i = i + r.start;
+
+        //     loop {
+        //         if self.spring_state.chars().nth(i).unwrap() != '#' || i < r.start {
+        //             first_bad_spring = Some(i+1);
+        //             break
+        //         }
+        //         i -= 1;
+        //     }
+
+        //     // Unknown spring count before first bad spring (from right to left)
+        //     let  unknown_count = self.spring_state
+        //         .chars()
+        //         .rev()
+        //         .collect::<Vec<char>>()[0..self.spring_state.len() - first_bad_spring.unwrap()]
+        //         .iter()
+        //         .fold(0, |acc, c| if *c == '?' { acc + 1 } else { acc });
+
+        //     // if dbg!(unknown_count) < dbg!(allowed_window_start_ranges.last().unwrap().len()) {
+        //     if dbg!(unknown_count) < dbg!(*self.cgds.last().unwrap()) {
+        //         println!("RESTRICTING RANGE[-1]");
+        //         if let (Some(a), Some(b)) = (first_bad_spring, last_bad_spring) {
+        //             // dbg!(a, b, self.cgds.last());
+        //             let size_diff = (self.cgds.last().unwrap()).abs_diff(b-a+1);
+        //             // dbg!(&self.spring_state, r, first_bad_spring, last_bad_spring, size_diff);
+        //             // println!("{:?}, {:?}, {:?}, {:?}, {:?}", &self.spring_state, r, first_bad_spring, last_bad_spring, size_diff);
+        //             let end: usize;
+        //             if a + size_diff + self.cgds.last().unwrap() > self.spring_state.len() - 1 {
+        //                 end = self.spring_state.len() - 1 - self.cgds.last().unwrap();
+        //             } else {
+        //                 // start = a - size_diff;
+        //                 // end = b + size_diff;
+        //                 end = b;
+        //             }
+        //             dbg!(a, b, end, size_diff, self.cgds.last());
+        //             allowed_window_start_ranges[self.cgds.len()-1] = Range {
+        //                 // start: a - size_diff,
+        //                 start: a,
+        //                 end,
+        //                 // end: b.min(self.spring_state.len()-1 - self.cgds.last().unwrap()),
+        //             }
+        //         }
+        //     }
+        // }
 
         allowed_window_start_ranges
     }
@@ -221,8 +345,6 @@ pub fn solve(filepath: &str) -> String {
     let mut i = 0;
     records.into_iter().fold(0, |acc, r| {
         println!("{i}\tTESTING: {:?}", r.spring_state);
-
-
 
         let count = r.get_valid_combination_count();
         println!("\tCOUNT: {}", count);
