@@ -6,6 +6,26 @@ use std::num::ParseIntError;
 use std::fmt;
 use std::ops::Range;
 
+
+fn get_ranges(src_range: Range<u64>, seed_range: Range<u64>) -> Vec<Range<u64>> {
+    // No overlap
+    if seed_range.end <= src_range.start  || seed_range.start >= src_range.end {
+
+    // Exact or inner overlap of seed over source range
+    } else if seed_range.start >= src_range.start && seed_range.end <= src_range.end {
+
+    // Seed range is less than source range with overlap
+    } else if seed_range.end > src_range.start && seed_range.end < src_range.end {
+
+    // Seed range is greater than source range with overlap
+    } else if seed_range.start > src_range.start && seed_range.start < src_range.end {
+
+    // Seed range overlaps source range on left and right
+    } else if seed_range.start < src_range.start && seed_range.end > src_range.end {
+
+    }
+}
+
 #[derive(Debug)]
 struct AlmanacMap {
     src_name: String,
