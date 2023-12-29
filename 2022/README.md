@@ -1,4 +1,4 @@
 # Advent of Code 2022
-Solutions for all the AoC 2022 challenges.
+This year I tried out AoC with JS using NodeJS.
 
-### Day 1
+You can see all the original problem descriptions [here](https://adventofcode.com/2022)
